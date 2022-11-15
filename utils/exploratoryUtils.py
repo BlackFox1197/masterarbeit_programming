@@ -35,6 +35,12 @@ def extract_f0(filename, duration=3, offset=0.5):
     plot_f0(times, f0)
     return times, f0
 
+def extract_f0_data(data, sr, emotion):
+    f0  = librosa.yin(y=data, fmin=1, fmax=20000, sr= sr)
+    times = librosa.times_like(f0)
+    plot_f0(times, f0, emotion)
+    return times, f0
+
 
 def extract_f0_andPlot(filename, duration=3, offset=0.5):
     y, sr = librosa.load(filename, duration=duration, offset=offset)
@@ -66,7 +72,7 @@ def average_over_one_emotion_f0(filenameArray, duration=1, offset=0.5, label = "
     length = len(filenameArray)
     timesAcc = np.zeros((50,))
     f0Acc = np.zeros((50,))
-    for filename in filenameArray:
+    for filename in filenameArray: #Todo: fix init with zeroes, it contaminates the data
         y, sr = librosa.load(filename, duration=duration, offset=offset)
         f0 = librosa.yin(y=y, fmin=librosa.note_to_hz('C2'), fmax=librosa.note_to_hz('C7'), sr=sr)
         times = librosa.times_like(f0)
@@ -74,6 +80,23 @@ def average_over_one_emotion_f0(filenameArray, duration=1, offset=0.5, label = "
         timesAcc = add_two_arrays_different_shape_average(timesAcc, times)
     plot_f0(timesAcc, f0Acc, label)
     return timesAcc, f0Acc
+
+
+def average_waveplot(filename_array, emotion):
+
+    mainarray = np.zeros((5,))
+    samplingrate = 0
+    for file in filename_array:
+        data, sampling_rate = librosa.load(file, offset=0.5, duration=1.2)
+        samplingrate = sampling_rate
+        mainarray = add_two_arrays_different_shape_average(data, mainarray)
+
+    waveplot(mainarray, samplingrate, emotion)
+    return mainarray, samplingrate
+
+
+
+
 
 
 def add_two_arrays_different_shape_average(arr1, arr2):
