@@ -55,14 +55,14 @@ def extract_f0_andPlot(filename, duration=3, offset=0.5):
     ax.legend(loc='upper right')
     return times
 
-def plot_f0(times, f0):
+def plot_f0(times, f0, label="yin"):
     fig, ax = plt.subplots()
-    ax.set(title='pYIN fundamental frequency estimation')
+    ax.set(title=label)
     ax.plot(times, f0, label='f0', color='cyan', linewidth=3)
     ax.legend(loc='upper right')
 
 
-def average_over_one_emotion_f0(filenameArray, duration=1, offset=0.5):
+def average_over_one_emotion_f0(filenameArray, duration=1, offset=0.5, label = "yin"):
     length = len(filenameArray)
     timesAcc = np.zeros((50,))
     f0Acc = np.zeros((50,))
@@ -72,7 +72,7 @@ def average_over_one_emotion_f0(filenameArray, duration=1, offset=0.5):
         times = librosa.times_like(f0)
         f0Acc = add_two_arrays_different_shape_average(f0Acc,  f0)
         timesAcc = add_two_arrays_different_shape_average(timesAcc, times)
-    plot_f0(timesAcc, f0Acc)
+    plot_f0(timesAcc, f0Acc, label)
     return timesAcc, f0Acc
 
 
