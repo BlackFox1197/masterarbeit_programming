@@ -4,14 +4,54 @@ import librosa
 import librosa.display
 import matplotlib.pyplot as plt
 import numpy as np
+import utils.waveplot_utils as wu
 
 
 def waveplot(data, sr, emotion):
-    plt.figure(figsize=(10, 4))
-    plt.title(emotion, size=20)
-    librosa.display.waveshow(data, sr=sr)
+    wu.waveplot(data, sr, emotion)
+    # plt.figure(figsize=(10, 4))
+    # plt.title(emotion, size=20)
+    # librosa.display.waveshow(data, sr=sr)
     # librosa.display.waveplot(data, sr=sr)
     # plt.show
+
+
+def waveplot_two_datas(data, sr, data1, sr1, emotion, emotion1):
+    wu.waveplot_two_datas(data, sr, data1, sr1, emotion, emotion1)
+
+
+def average_waveplot_two_emotions(filename_array1, emotion1, filename_array2, emotion2, offset1=0.5, duration1=1.2, offset2=0.5, duration2=1.2):
+    mainarray1, samplingrate1 = calcAverage(filename_array1, emotion1, offset1, duration1)
+    mainarray2, samplingrate2 = calcAverage(filename_array2, emotion2, offset2, duration2)
+    waveplot_two_datas(mainarray1, samplingrate1, mainarray2, samplingrate2, emotion1, emotion2)
+
+
+
+def calcAverage(filename_array, emotion, offset=0.5, duration=1.2):
+    mainarray = np.zeros((5,))
+    samplingrate = 0
+    for file in filename_array:
+        data, sampling_rate = librosa.load(file, offset=offset, duration=duration)
+        samplingrate = sampling_rate
+        mainarray = add_two_arrays_different_shape_average(data, mainarray)
+    return mainarray, samplingrate
+
+
+
+# def average_waveplot
+def average_waveplot(filename_array, emotion, offset=0.5, duration=1.2):
+
+    # mainarray = np.zeros((5,))
+    # samplingrate = 0
+    # for file in filename_array:
+    #     data, sampling_rate = librosa.load(file, offset=offset, duration=duration)
+    #     samplingrate = sampling_rate
+    #     mainarray = add_two_arrays_different_shape_average(data, mainarray)
+    mainarray, samplingrate = calcAverage(filename_array, emotion, offset, duration)
+
+    waveplot(mainarray, samplingrate, emotion)
+    return mainarray, samplingrate
+
 
 def spectogram(data, sr, emotion):
     x = librosa.stft(data)
@@ -82,17 +122,6 @@ def average_over_one_emotion_f0(filenameArray, duration=1, offset=0.5, label = "
     return timesAcc, f0Acc
 
 
-def average_waveplot(filename_array, emotion):
-
-    mainarray = np.zeros((5,))
-    samplingrate = 0
-    for file in filename_array:
-        data, sampling_rate = librosa.load(file, offset=0.5, duration=1.2)
-        samplingrate = sampling_rate
-        mainarray = add_two_arrays_different_shape_average(data, mainarray)
-
-    waveplot(mainarray, samplingrate, emotion)
-    return mainarray, samplingrate
 
 
 
