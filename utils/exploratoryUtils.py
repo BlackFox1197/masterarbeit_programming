@@ -1,3 +1,4 @@
+import importlib
 import math
 
 import librosa
@@ -5,6 +6,7 @@ import librosa.display
 import matplotlib.pyplot as plt
 import numpy as np
 import utils.waveplot_utils as wu
+import  utils.spectrogram_utils as su
 
 
 def waveplot(data, sr, emotion):
@@ -52,14 +54,23 @@ def average_waveplot(filename_array, emotion, offset=0.5, duration=1.2):
     waveplot(mainarray, samplingrate, emotion)
     return mainarray, samplingrate
 
+def average_spectrogramm(filename_array, emotion, axis= None, fig= None, offset=0.5, duration=1.2):
+    importlib.  reload(su)
+    # if axis == None:
+    #     fig, axis = plt.subplots(nrows=1, ncols=1, figsize=(10, 4))
+    mainarray, samplingrate = calcAverage(filename_array, emotion, offset, duration)
+    su.spectogramWithAxis(mainarray, samplingrate, emotion, axis, fig)
+
 
 def spectogram(data, sr, emotion):
-    x = librosa.stft(data)
-    xdb = librosa.amplitude_to_db(abs(x))
-    plt.figure(figsize=(11, 4))
-    plt.title(emotion, size=20)
-    librosa.display.specshow(xdb, sr=sr, x_axis='time', y_axis='hz')
-    plt.colorbar()
+    importlib.reload(su)
+    su.spectogram(data, sr, emotion)
+    # x = librosa.stft(data)
+    # xdb = librosa.amplitude_to_db(abs(x))
+    # plt.figure(figsize=(11, 4))
+    # plt.title(emotion, size=20)
+    # librosa.display.specshow(xdb, sr=sr, x_axis='time', y_axis='hz')
+    # plt.colorbar()
 
 
 def extract_mfcc(filename, duration=3, offset=0.5):
