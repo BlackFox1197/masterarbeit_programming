@@ -1,4 +1,4 @@
-speech	label
+path	label
 ../tess\OAF_Fear\OAF_choice_fear.wav	fear
 ../tess\YAF_pleasant_surprised\YAF_perch_ps.wav	ps
 ../tess\OAF_angry\OAF_cab_angry.wav	angry

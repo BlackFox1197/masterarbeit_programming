@@ -1,4 +1,4 @@
-speech	label
+path	label
 ../tess\OAF_Sad\OAF_peg_sad.wav	sad
 ../tess\OAF_happy\OAF_pole_happy.wav	happy
 ../tess\OAF_Sad\OAF_pass_sad.wav	sad
