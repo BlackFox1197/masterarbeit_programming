@@ -1,6 +1,7 @@
-from tkinter import Variable
 import torch.nn as nn
 import torch
+from torch.autograd import Variable
+
 
 ### https://cnvrg.io/pytorch-lstm/ ###
 

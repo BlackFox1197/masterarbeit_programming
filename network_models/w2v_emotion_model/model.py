@@ -53,6 +53,7 @@ class Wav2Vec2ForSpeechClassification(Wav2Vec2PreTrainedModel):
         self.config = config
 
         self.wav2vec2 = Wav2Vec2Model(config)
+        ### here is our classification head
         self.classifier = Wav2Vec2ClassificationHead(config)
 
         self.init_weights()
@@ -122,6 +123,7 @@ class Wav2Vec2ForSpeechClassification(Wav2Vec2PreTrainedModel):
             output = (logits,) + outputs[2:]
             return ((loss,) + output) if loss is not None else output
 
+        # speech classifieroutput
         return SpeechClassifierOutput(
             loss=loss,
             logits=logits,

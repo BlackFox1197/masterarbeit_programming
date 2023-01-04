@@ -2,12 +2,19 @@ import os
 import sys
 
 import librosa
+import numpy as np
 import torchaudio
 
 def speech_file_to_array_fn(path, target_sampling_rate):
     speech_array, sampling_rate = torchaudio.load(path)
     resampler = torchaudio.transforms.Resample(sampling_rate, target_sampling_rate)
     speech = resampler(speech_array).squeeze().numpy()
+    return speech
+
+def speech_file_to_tensor_fn(path, target_sampling_rate):
+    speech_array, sampling_rate = torchaudio.load(path)
+    resampler = torchaudio.transforms.Resample(sampling_rate, target_sampling_rate)
+    speech = resampler(speech_array)
     return speech
 
 def label_to_id(label, label_list):
@@ -17,10 +24,14 @@ def label_to_id(label, label_list):
 
     return label
 
+def label_to_id_np(label, label_list):
+    np.where(label_list == label)
+
+    return label
+
 def speech_file_to_array_librosa(speech_path, target_sampling_rate):
     speech_array, sampling_rate = librosa.load(speech_path)
     resampler = librosa.resample(speech_array, orig_sr=sampling_rate, target_sr=target_sampling_rate).squeeze()
-
     return resampler
 
 
