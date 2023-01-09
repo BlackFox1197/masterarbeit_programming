@@ -97,6 +97,7 @@ class CTCTrainer(Trainer):
 
         model.train()
         inputs = self._prepare_inputs(inputs)
+        print(inputs)
 
         if self.use_cuda_amp:
             with autocast():

@@ -78,7 +78,8 @@ class AudioEmotionTessSoundStreamEncodedDataset(Dataset):
             i += 1
             from utils.Visual_Coding_utils import progress
             progress(i, self.dataSet.__len__()[0], "generating encoding")
-            tensors.append(self.soundStream.encoder(sample[0]).detach().cpu().numpy())
+            data = self.soundStream.encoder(sample[0])
+            tensors.append(torch.nn.functional.pad(torch.tensor(data).to("cuda"), (0, 400 - data.shape[1], 0, 0)).detach().cpu().numpy())
             emotions.append(self.emoToId(sample[1]))
             torch.cuda.empty_cache()
         df = pd.DataFrame()
