@@ -13,6 +13,53 @@ from torchvision.io import read_image
 from torchvision.transforms import Lambda
 
 
+
+
+# class NewAudioEmotionTessDataset(Dataset):
+#     inputcolumn = "path"
+#     labelcolumn = "emotion"
+#
+#     def __init__(self, directory, soundstream: SoundStream):
+#         self.directory = directory
+#         self.dataFrame = self.load_custom_dataset()
+#         label_list = self.dataFrame.groupby(self.labelcolumn)[self.labelcolumn].count().index.array.to_numpy()
+#         self.label_list = np.sort(label_list)
+#         self.target_transform = Lambda(lambda y: torch.zeros(7, dtype=torch.float).scatter_(dim=0, index=torch.tensor(y), value=1))
+#         self.soundstream = soundstream
+#
+#
+#     def __len__(self):
+#         return self.dataFrame.__len__()
+#
+#
+#     def emoToId(self, emotion: str):
+#         return np.where(self.label_list == emotion)[0]
+#
+#     def getEmotionFromId(self, id: int):
+#         return self.label_list[id]
+#
+#     def __getitem__(self, idx):
+#         audio = self.soundstream.encoder(torchaudio.load(self.dataFrame.iloc[idx][self.inputcolumn])[0].to("cuda"))
+#         audio = torch.nn.functional.pad(audio, (0, 400 - audio.shape[1], 0, 0)).detach()
+#         label = self.target_transform(self.emoToId(self.dataFrame.iloc[idx][self.labelcolumn]))
+#         print("oh no")
+#         return audio, label
+#
+#     def load_custom_dataset(self) -> pd.DataFrame:
+#         paths = []
+#         emotions = []
+#         for dirname, _, filenames in os.walk(self.directory):
+#             for filename in filenames:
+#                 label = filename.split('_')[-1]
+#                 label = label.split('.')[0]
+#                 emotions.append(label.lower())
+#                 paths.append(os.path.join(dirname, filename))
+#         df = pd.DataFrame()
+#         df[self.inputcolumn] = paths
+#         df[self.labelcolumn] = emotions
+#         return df
+
+
 class AudioEmotionTessDataset(Dataset):
     inputcolumn = "path"
     labelcolumn = "emotion"
@@ -30,7 +77,7 @@ class AudioEmotionTessDataset(Dataset):
 
     def __getitem__(self, idx):
         audio = torchaudio.load(self.dataFrame.iloc[idx][self.inputcolumn])[0].to("cuda")
-        label = self.target_transform(self.dataFrame.iloc[idx][self.labelcolumn])
+        label = self.dataFrame.iloc[idx][self.labelcolumn]
         return audio, label
 
     def load_custom_dataset(self) -> pd.DataFrame:
@@ -59,9 +106,10 @@ class AudioEmotionTessSoundStreamEncodedDataset(Dataset):
         self.soundStream = soundStream
         self.dataSet = dataSet
         self.encodedData = self._encodeWithSoundStream()
+        self.target_transform = Lambda(lambda y: torch.zeros(7, dtype=torch.float).scatter_(dim=0, index=torch.tensor(y), value=1))
 
     def __getitem__(self, index):
-        return self.encodedData.iloc[index][self.inputcolumn], self.encodedData.iloc[index][self.labelcolumn]
+        return self.encodedData.iloc[index][self.inputcolumn], self.target_transform(self.encodedData.iloc[index][self.labelcolumn])
 
 
     def __len__(self):
