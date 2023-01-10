@@ -10,6 +10,8 @@ from torch import Tensor
 from torch.utils.data import Dataset
 from torch.utils.data.dataset import T_co
 from torchvision.io import read_image
+from torchvision.transforms import Lambda
+
 
 class AudioEmotionTessDataset(Dataset):
     inputcolumn = "path"
@@ -20,6 +22,7 @@ class AudioEmotionTessDataset(Dataset):
         self.dataFrame = self.load_custom_dataset()
         label_list = self.dataFrame.groupby(self.labelcolumn)[self.labelcolumn].count().index.array.to_numpy()
         self.label_list = np.sort(label_list)
+        self.target_transform = Lambda(lambda y: torch.zeros(10, dtype=torch.float).scatter_(dim=0, index=torch.tensor(y), value=1))
 
 
     def __len__(self):
@@ -27,7 +30,7 @@ class AudioEmotionTessDataset(Dataset):
 
     def __getitem__(self, idx):
         audio = torchaudio.load(self.dataFrame.iloc[idx][self.inputcolumn])[0].to("cuda")
-        label = self.dataFrame.iloc[idx][self.labelcolumn]
+        label = self.target_transform(self.dataFrame.iloc[idx][self.labelcolumn])
         return audio, label
 
     def load_custom_dataset(self) -> pd.DataFrame:
@@ -79,7 +82,7 @@ class AudioEmotionTessSoundStreamEncodedDataset(Dataset):
             from utils.Visual_Coding_utils import progress
             progress(i, self.dataSet.__len__()[0], "generating encoding")
             data = self.soundStream.encoder(sample[0])
-            tensors.append(torch.nn.functional.pad(torch.tensor(data).to("cuda"), (0, 400 - data.shape[1], 0, 0)).detach().cpu().numpy())
+            tensors.append(torch.nn.functional.pad(data, (0, 400 - data.shape[1], 0, 0)).detach().cpu().numpy())
             emotions.append(self.emoToId(sample[1]))
             torch.cuda.empty_cache()
         df = pd.DataFrame()

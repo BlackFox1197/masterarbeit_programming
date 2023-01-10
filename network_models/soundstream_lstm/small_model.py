@@ -8,15 +8,14 @@ from transformers.utils import ModelOutput
 
 
 class EmotionClassifierSevenEmos(nn.Module):
-    batch_size = 10
 
     def __init__(self):
         super(EmotionClassifierSevenEmos, self).__init__()
-        self.linear1 = torch.nn.Linear(in_features=512*400*self.batch_size, out_features=200)
+        self.linear1 = torch.nn.Linear(in_features=512*400, out_features=200)
         self.activation = torch.nn.ReLU()
         self.linear2 = torch.nn.Linear(200, 200)
         self.linear3 = torch.nn.Linear(200, 4)
-        self.linear4 = torch.nn.Linear(4, 6)
+        self.linear4 = torch.nn.Linear(4, 7)
         #pass dimension (along axis 0)
         self.softmax = torch.nn.Softmax(dim=0)
 
@@ -76,6 +75,7 @@ class EmotionClassifierSevenEmos(nn.Module):
 
                 if m.bias is not None:
                     nn.init.constant_(m.bias,0)
+
 
 
 
