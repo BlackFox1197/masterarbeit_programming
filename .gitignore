@@ -1,4 +1,8 @@
 /notebooks/content/
 /notebooks/results3/
 /notebooks/cache/
+/network_models/soundstream_lstm/__pycache__/
+/network_models/w2v_emotion_model/__pycache__/
+/notebooks/.ipynb_checkpoints/playground-checkpoint.ipynb
+/utils/__pycache__/
 /apex
