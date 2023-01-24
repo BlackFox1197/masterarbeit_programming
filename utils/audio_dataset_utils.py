@@ -3,7 +3,11 @@ import sys
 
 import librosa
 import numpy as np
+import pandas as pd
 import torchaudio
+from sklearn.model_selection import train_test_split
+from torch.utils.data import Subset
+
 
 def speech_file_to_array_fn(path, target_sampling_rate):
     speech_array, sampling_rate = torchaudio.load(path)
@@ -39,8 +43,6 @@ def load_custom_dataset():
     paths = []
     testpaths = []
     testlabels = []
-    terminator = 'D:/Uni/19.Master/Daten/terminator.wav'
-    print(sys.executable)
     emotions = []
     # for dirname, _, filenames in os.walk('Daten/TESS Toronto emotional speech set data'):
     # D:\Uni\19.Master\DATEN
@@ -75,7 +77,27 @@ def load_custom_dataset():
                 testlabels.append(label.lower())
     com_labels = testlabels + emotions
     com_paths = testpaths + paths
-    print(testlabels)
-    print(testpaths)
     print('Dataset is loaded')
     return paths, emotions, testpaths, testlabels
+
+def loadTess(directory, inputcolumn, labelcolumn) -> pd.DataFrame:
+    paths = []
+    emotions = []
+    for dirname, _, filenames in os.walk(directory):
+        for filename in filenames:
+            label = filename.split('_')[-1]
+            label = label.split('.')[0]
+            emotions.append(label.lower())
+            paths.append(os.path.join(dirname, filename))
+    df = pd.DataFrame()
+    df[inputcolumn] = paths
+    df[labelcolumn] = emotions
+    return df
+
+def train_val_dataset(dataset, val_split=0.25):
+    train_idx, val_idx = train_test_split(list(range(len(dataset))), test_size=val_split)
+    datasets = {}
+    trainSet = Subset(dataset, train_idx)
+    valSet = Subset(dataset, val_idx)
+    return trainSet, valSet
+

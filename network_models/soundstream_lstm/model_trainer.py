@@ -10,21 +10,25 @@ class ModelTrainer():
             train_dataset: Dataset,
             eval_dataset: Dataset,
             device: str,
-            num_train_steps: int,
+            num_epochs: int,
             batch_size: int,
             lr=3e-4,
             save_model_every=1000,
-            loss_fn=nn.CrossEntropyLoss()
+            loss_fn=nn.CrossEntropyLoss(),
+            need_reshape = True,
+            model_path = "content/customModel"
     ):
+        self.model_path = model_path
         self.model = model
         self.train_dataset = train_dataset
         self.test_dataset = eval_dataset
         self.device = device
-        self.num_train_steps = num_train_steps
+        self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.lr = lr
         self.save_model_every = save_model_every
         self.loss_fn = loss_fn
+        self.need_reshape = need_reshape
 
 
 
@@ -33,7 +37,10 @@ class ModelTrainer():
         test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=2)
         optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
 
-        for t in range(self.num_train_steps):
+        print(len(self.train_dataset))
+        for t in range(self.num_epochs):
+            if(t % self.save_model_every == 0):
+                torch.save(self.model.state_dict(), self.model_path + f"emo_reco_{t}.pth")
             print(f"Epoch {t + 1}\n-------------------------------")
             self.train_loop(train_dataloader, self.model, self.loss_fn, optimizer)
             self.test_loop(test_dataloader, self.model, self.loss_fn)
@@ -45,7 +52,10 @@ class ModelTrainer():
     def train_loop(self, dataloader, model, loss_fn, optimizer):
         size = len(dataloader.dataset)
         for batch, (X, y) in enumerate(dataloader):
-            X = X.reshape(-1, 512 * 400).to("cuda")
+            if(self.need_reshape):
+                X = X.reshape(-1, 512 * 400).to("cuda")
+            else:
+                X = X.to(self.device)
             # Compute prediction and loss
             pred = model(X)
             y = y.to("cuda")
@@ -68,7 +78,10 @@ class ModelTrainer():
 
         with torch.no_grad():
             for X, y in dataloader:
-                X = X.reshape(-1, 512 * 400).to("cuda")
+                if (self.need_reshape):
+                    X = X.reshape(-1, 512 * 400).to("cuda")
+                else:
+                    X = X.to(self.device)
                 y = y.to("cuda")
                 pred = model(X)
 
