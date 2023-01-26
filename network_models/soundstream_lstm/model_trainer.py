@@ -2,11 +2,14 @@ import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
 
+from network_models.w2v_emotion_model.custom_collator import DataCollatorCTCWithPadding
+
 
 class ModelTrainer():
     def __init__(
             self,
             model: nn.Module,
+            data_collator: DataCollatorCTCWithPadding,
             train_dataset: Dataset,
             eval_dataset: Dataset,
             device: str,
@@ -17,7 +20,9 @@ class ModelTrainer():
             loss_fn=nn.CrossEntropyLoss(),
             need_reshape = True,
             model_path = "content/customModel"
+
     ):
+        self.data_collator = data_collator
         self.model_path = model_path
         self.model = model
         self.train_dataset = train_dataset
@@ -32,8 +37,12 @@ class ModelTrainer():
 
 
 
+    def colate_fn(self, batch):
+        return self.data_collator.collate_fn(batch)
+
+
     def train(self):
-        train_dataloader = DataLoader(self.train_dataset, shuffle=True, batch_size=self.batch_size, num_workers=2)
+        train_dataloader = DataLoader(self.train_dataset, shuffle=True, batch_size=self.batch_size, num_workers=2 ,collate_fn=self.colate_fn)
         test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=2)
         optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr, momentum=.9)
 
@@ -51,16 +60,17 @@ class ModelTrainer():
 
     def train_loop(self, dataloader, model, loss_fn, optimizer):
         size = len(dataloader.dataset)
-        for batch, (X, y) in enumerate(dataloader):
+        for batch, (X, y, z) in enumerate(dataloader):
             if(self.need_reshape):
                 X = X.reshape(-1, 512 * 400).to("cuda")
             else:
                 X = X.to(self.device)
             # Compute prediction and loss
-            pred = model(X)
+            z = z.to("cuda")
             y = y.to("cuda")
+            pred = model(X, attention_mask=y, labels=z)
 
-            loss = loss_fn(pred, y)
+            loss = loss_fn(pred, z)
 
             # Backpropagation
             optimizer.zero_grad()

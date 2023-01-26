@@ -106,15 +106,16 @@ class AudioEmotionTessWav2VecDataset(Dataset):
     inputcolumn = "encoded"
     labelcolumn = "emotionCode"
 
-    def __init__(self, dataSet: AudioEmotionTessDataset | CombinedEmoDataSet_7_emos, processor: Wav2Vec2Processor, sampling_rate: int):
+    def __init__(self, dataSet: AudioEmotionTessDataset | CombinedEmoDataSet_7_emos, processor: Wav2Vec2Processor, sampling_rate: int, oneHotEmotion: bool = False):
         self.processor = processor
         self.dataSet = dataSet
         self.sampling_rate = sampling_rate
         self.encodedData = self._encodeWithSoundStream()
+        self.oneHotEmotion = oneHotEmotion
         self.target_transform = Lambda(lambda y: torch.zeros(7, dtype=torch.float).scatter_(dim=0, index=torch.tensor(y), value=1))
 
     def __getitem__(self, index):
-        return self.encodedData.iloc[index][self.inputcolumn], self.target_transform(self.encodedData.iloc[index][self.labelcolumn])
+        return self.encodedData.iloc[index][self.inputcolumn], self.target_transform(self.encodedData.iloc[index][self.labelcolumn]) if self.oneHotEmotion else self.encodedData.iloc[index][self.labelcolumn]
 
 
     def __len__(self):
@@ -138,10 +139,10 @@ class AudioEmotionTessWav2VecDataset(Dataset):
             #resampled = librosa.resample(sample[0].numpy(), orig_sr=self.dataSet.samplerate, target_sr=self.sampling_rate)
             data = self.processor(sample[0], sampling_rate = self.sampling_rate)
             unWrapedData = data['input_values'][0][0]
-            if(unWrapedData.shape[0] < 60000):
-                diff = 60000 - unWrapedData.shape[0]
-                unWrapedData = np.pad(unWrapedData, (diff//2, (diff//2)+1), mode="constant", constant_values=np.pi*0.1)
-            unWrapedData = unWrapedData[0:60000]
+            # if(unWrapedData.shape[0] < 60000):
+            #     diff = 60000 - unWrapedData.shape[0]
+            #     unWrapedData = np.pad(unWrapedData, (diff//2, (diff//2)+1), mode="constant", constant_values=np.pi*0.1)
+            # unWrapedData = unWrapedData[0:60000]
             tensors.append(unWrapedData)
             #tensors.append(torch.nn.functional.pad(data, (0, 400 - data.shape[1], 0, 0)).detach().cpu().numpy())
             emotions.append(self.emoToId(sample[1]))
