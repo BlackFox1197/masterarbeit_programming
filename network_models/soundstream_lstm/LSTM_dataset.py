@@ -14,6 +14,8 @@ from torchvision.io import read_image
 from torchvision.transforms import Lambda
 from transformers import Wav2Vec2Processor
 
+from network_models.soundstream_lstm.CombinedEmoDataset_7_Emo import CombinedEmoDataSet_7_emos
+
 
 # class NewAudioEmotionTessDataset(Dataset):
 #     inputcolumn = "path"
@@ -75,7 +77,7 @@ class AudioEmotionTessDataset(Dataset):
 
 
     def __len__(self):
-        return self.dataFrame.__len__(), self.label_list.__len__()
+        return self.dataFrame.__len__()
 
     def __getitem__(self, idx):
         audio = torchaudio.load(self.dataFrame.iloc[idx][self.inputcolumn])[0].to(self.device)
@@ -104,7 +106,7 @@ class AudioEmotionTessWav2VecDataset(Dataset):
     inputcolumn = "encoded"
     labelcolumn = "emotionCode"
 
-    def __init__(self, dataSet: AudioEmotionTessDataset, processor: Wav2Vec2Processor, sampling_rate: int):
+    def __init__(self, dataSet: AudioEmotionTessDataset | CombinedEmoDataSet_7_emos, processor: Wav2Vec2Processor, sampling_rate: int):
         self.processor = processor
         self.dataSet = dataSet
         self.sampling_rate = sampling_rate
@@ -132,7 +134,7 @@ class AudioEmotionTessWav2VecDataset(Dataset):
         for sample in iter(self.dataSet):
             i += 1
             from utils.Visual_Coding_utils import progress
-            progress(i, self.dataSet.__len__()[0], "generating encoding")
+            progress(i, self.dataSet.__len__(), "generating encoding")
             #resampled = librosa.resample(sample[0].numpy(), orig_sr=self.dataSet.samplerate, target_sr=self.sampling_rate)
             data = self.processor(sample[0], sampling_rate = self.sampling_rate)
             unWrapedData = data['input_values'][0][0]

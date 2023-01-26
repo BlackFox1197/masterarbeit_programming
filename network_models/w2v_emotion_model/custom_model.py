@@ -11,11 +11,14 @@ class W2V_EmotionClassifierSevenEmos(nn.Module):
 
     def __init__(self):
         super(W2V_EmotionClassifierSevenEmos, self).__init__()
-        self.linear1 = torch.nn.Linear(in_features=60000, out_features=2000)
-        self.activation = torch.nn.ReLU()
-        self.linear2 = torch.nn.Linear(2000, 1000)
-        self.linear3 = torch.nn.Linear(1000, 200)
-        self.linear4 = torch.nn.Linear(200, 7)
+        self.linear1 = torch.nn.Linear(in_features=60000, out_features=5000)
+        self.activation = torch.nn.LeakyReLU()
+        self.activationT = nn.Tanh()
+        self.dropouts = torch.nn.Dropout(0.2)
+        self.linear2 = torch.nn.Linear(5000, 1000)
+        self.linear3 = torch.nn.Linear(1000, 100)
+        self.linear4 = torch.nn.Linear(100, 4)
+        self.linear5 = torch.nn.Linear(4, 7)
         #pass dimension (along axis 0)
         self.softmax = torch.nn.Softmax(dim=0)
 
@@ -23,13 +26,16 @@ class W2V_EmotionClassifierSevenEmos(nn.Module):
 
     def forward(self, x, labels=None):
         x = self.linear1(x)
-        x = self.activation(x)
+        x = self.activationT(x)
+        x = self.dropouts(x)
         x = self.linear2(x)
         x = self.activation(x)
         x = self.linear3(x)
-        y = self.activation(x)
-        y = self.linear4(y)
-        y = self.softmax(y)
+        x = self.activation(x)
+        x = self.linear4(x)
+        y = self.activationT(x)
+        y = self.linear5(y)
+        #y = self.softmax(y)
 
         return y
 

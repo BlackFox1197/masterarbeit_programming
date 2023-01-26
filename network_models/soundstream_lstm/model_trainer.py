@@ -35,9 +35,9 @@ class ModelTrainer():
     def train(self):
         train_dataloader = DataLoader(self.train_dataset, shuffle=True, batch_size=self.batch_size, num_workers=2)
         test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=2)
-        optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
+        optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr, momentum=.9)
 
-        print(len(self.train_dataset))
+
         for t in range(self.num_epochs):
             if(t % self.save_model_every == 0):
                 torch.save(self.model.state_dict(), self.model_path + f"emo_reco_{t}.pth")
@@ -70,6 +70,7 @@ class ModelTrainer():
             if batch % 100 == 0:
                 loss, current = loss.item(), batch * len(X)
                 print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+
 
     def test_loop(self, dataloader, model, loss_fn):
         size = len(dataloader.dataset)
