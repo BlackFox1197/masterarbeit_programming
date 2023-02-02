@@ -15,9 +15,10 @@ class ModelTrainer():
             device: str,
             num_epochs: int,
             batch_size: int,
-            lr=3e-4,
+            lr=2e-4,
             save_model_every=1000,
-            loss_fn=nn.CrossEntropyLoss(),
+            #loss_fn=nn.CrossEntropyLoss(),
+            loss_fn=nn.BCEWithLogitsLoss(),
             need_reshape = True,
             model_path = "content/customModel"
 
@@ -43,8 +44,8 @@ class ModelTrainer():
 
     def train(self):
         train_dataloader = DataLoader(self.train_dataset, shuffle=True, batch_size=self.batch_size, num_workers=2 ,collate_fn=self.colate_fn)
-        test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=2)
-        optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr, momentum=.9)
+        test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=2,collate_fn=self.colate_fn)
+        optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
 
 
         for t in range(self.num_epochs):
@@ -60,15 +61,14 @@ class ModelTrainer():
 
     def train_loop(self, dataloader, model, loss_fn, optimizer):
         size = len(dataloader.dataset)
-        for batch, (X, y, z) in enumerate(dataloader):
+        for batch, (X, z) in enumerate(dataloader):
             if(self.need_reshape):
-                X = X.reshape(-1, 512 * 400).to("cuda")
+                X = X.reshape(-1, 512 * 400).to(self.device)
             else:
                 X = X.to(self.device)
             # Compute prediction and loss
-            z = z.to("cuda")
-            y = y.to("cuda")
-            pred = model(X, attention_mask=y, labels=z)
+            z = z.to(self.device)
+            pred = model(X)
 
             loss = loss_fn(pred, z)
 
@@ -88,17 +88,17 @@ class ModelTrainer():
         test_loss, correct = 0, 0
 
         with torch.no_grad():
-            for X, y in dataloader:
+            for X, labels in dataloader:
                 if (self.need_reshape):
-                    X = X.reshape(-1, 512 * 400).to("cuda")
+                    X = X.reshape(-1, 512 * 400).to(self.device)
                 else:
                     X = X.to(self.device)
-                y = y.to("cuda")
+                labels = labels.to(self.device)
                 pred = model(X)
-
-                test_loss += loss_fn(pred, y.to("cuda")).item()
-                y = torch.tensor([a.nonzero() for a in y]).to("cuda")
-                correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+                #pred = (nn.Softmax())(pred)
+                test_loss += loss_fn(pred, labels.to(self.device)).item()
+                labels = torch.tensor([a.nonzero() for a in labels]).to(self.device)
+                correct += (pred.argmax(1) == labels).type(torch.float).sum().item()
 
         test_loss /= num_batches
         correct /= size

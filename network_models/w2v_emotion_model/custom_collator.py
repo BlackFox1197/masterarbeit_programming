@@ -65,8 +65,10 @@ class DataCollatorCTCWithPadding:
         print(batch)
         return batch
 
+
+    """Convert an iterable of indices to one-hot encoded labels."""
     def indices_to_one_hot(self, data):
-        """Convert an iterable of indices to one-hot encoded labels."""
+
         targets = np.array(data).reshape(-1)
         return np.eye(self.num_labels)[targets]
 
@@ -77,13 +79,13 @@ class DataCollatorCTCWithPadding:
             input_features,
             padding=self.padding,
             max_length=self.max_length,
-            pad_to_multiple_of=self.pad_to_multiple_of,
+            #pad_to_multiple_of=self.pad_to_multiple_of,
             return_tensors="pt",
         )
 
 
         batch_label = torch.tensor(self.indices_to_one_hot(label_features))
 
-        return batch_features["input_values"], batch_features["attention_mask"], batch_label
+        return batch_features["input_values"], batch_label
 
 

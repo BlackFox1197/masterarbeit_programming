@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Optional, Tuple
 
 import numpy as np
+import torch.nn.functional as F
 import torch
 from torch import nn
 from torch.nn import BCEWithLogitsLoss
@@ -19,7 +20,7 @@ class ClassifierOutput(ModelOutput):
 class W2V_EmotionClassifierSevenEmos(nn.Module):
 
     def __init__(self):
-        super(W2V_EmotionClassifierSevenEmos, self).__init__()
+        super().__init__()
         self.linear1 = torch.nn.Linear(in_features=768, out_features=300)
         self.activation = torch.nn.LeakyReLU()
         self.activationT = nn.Tanh()
@@ -34,17 +35,22 @@ class W2V_EmotionClassifierSevenEmos(nn.Module):
         self.initialize_weights()
 
     def forward(self, x, labels=None):
+        relu = F.relu
+        tanh = F.tanh
+        softmax = F.softmax
+
         x = self.linear1(x)
-        x = self.activationT(x)
+        x = relu(x)
         x = self.dropouts(x)
         x = self.linear2(x)
-        x = self.activation(x)
+        x = relu(x)
         x = self.linear3(x)
-        x = self.activation(x)
+        x = relu(x)
         x = self.linear4(x)
-        y = self.activationT(x)
+        y = relu(x)
         y = self.linear5(y)
-        #y = self.softmax(y)
+        # y = tanh(y)
+        y = softmax(y)
 
         return y
 
@@ -61,16 +67,17 @@ class W2V_EmotionClassifierSevenEmos(nn.Module):
 
 
 class Wav2Vec2ForSpeechClassification(Wav2Vec2PreTrainedModel):
-    def __init__(self, model_name_or_path, pooling_mode, ):
+    def __init__(self, model_name_or_path, pooling_mode, device):
         config = Wav2Vec2Config(name_or_path=model_name_or_path)
         super().__init__(config)
+        self.deviceE = device
         self.pooling_mode = pooling_mode
 
 
-        self.wav2vec2 = Wav2Vec2Model(config).to("cuda")
-        self.classifier = W2V_EmotionClassifierSevenEmos().to("cuda")
+        self.wav2vec2 = Wav2Vec2Model(config).to(device)
+        self.classifier = (W2V_EmotionClassifierSevenEmos()).to(device)
 
-        self.init_weights()
+        #self.init_weights()
 
     def freeze_feature_extractor(self):
         self.wav2vec2.feature_extractor._freeze_parameters()
@@ -78,17 +85,15 @@ class Wav2Vec2ForSpeechClassification(Wav2Vec2PreTrainedModel):
     def forward(
             self,
             input_values,
-            labels,
-            attention_mask
     ):
         outputs = self.wav2vec2(
             input_values,
         )
         hidden_states = outputs[0]
-        hidden_states = self.merged_strategy(hidden_states, mode=self.pooling_mode)
+        #hidden_states = self.merged_strategy(hidden_states, mode=self.pooling_mode)
+        hidden_states = torch.mean(outputs[0], dim=1)
         logits = self.classifier(hidden_states)
 
-        self.config.problem_type = "multi_label_classification"
 
         #ohe = Lambda(lambda y: torch.zeros(7, dtype=torch.float).to("cuda").scatter_(dim=1, index=torch.tensor(y), value=1))
         return logits

@@ -94,8 +94,8 @@ def loadTess(directory, inputcolumn, labelcolumn) -> pd.DataFrame:
     df[labelcolumn] = emotions
     return df
 
-def train_val_dataset(dataset, val_split=0.25):
-    train_idx, val_idx = train_test_split(list(range(len(dataset))), test_size=val_split)
+def train_val_dataset(dataset, val_split=0.25, seed=100):
+    train_idx, val_idx = train_test_split(list(range(len(dataset))), test_size=val_split, random_state=seed)
     datasets = {}
     trainSet = Subset(dataset, train_idx)
     valSet = Subset(dataset, val_idx)
