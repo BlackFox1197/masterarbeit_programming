@@ -1,46 +1,40 @@
 import numpy as np
+from numba import float64
 
 
 def classificationReport(true_codes, pred_codes, sortedLabelStrings):
     assert len(true_codes) == len(pred_codes)
     length = len(sortedLabelStrings)
-    true_occurances = np.array([np.count_nonzero(np.array(true_codes) == i) for i in range(len(sortedLabelStrings))])
-    #correct = np.zeros(length)
-    tp = np.zeros(length)
-    fp = np.zeros(length)
-    fn = np.zeros(length)
-    tn = np.zeros(length)
-    # for i in range(len(true_codes)):
-    #     if(true_codes[i] == pred_codes[i]):
-    #         tp[true_codes[i]] += 1
-    #         tn += np.ones_like(tp)
-    #         tn[true_codes[i]] -= 1
-    #     else:
-    #         tn += np.ones_like(tp)
-    #         tn[pred_codes[i]] -= 1
-    #         tn[true_codes[i]] -= 1
-    #         fp[pred_codes[i]] += 1
-    #         fn[true_codes[i]] += 1
+    #true_occurances = np.array([np.count_nonzero(np.array(true_codes) == i) for i in range(len(sortedLabelStrings))])
 
-    tp1 = [np.sum(np.logical_and(np.asarray(pred_codes) == i, np.asarray(true_codes) == i)) for i in range(length)]
-    tn1 = [np.sum(np.logical_and(np.asarray(pred_codes) != i, np.asarray(true_codes) != i)) for i in range(length)]
-    fp1 = [np.sum(np.logical_and(np.asarray(pred_codes) == i, np.asarray(true_codes) != i)) for i in range(length)]
-    fn1 = [np.sum(np.logical_and(np.asarray(pred_codes) != i, np.asarray(true_codes) == i)) for i in range(length)]
+    tp = np.array([np.sum(np.logical_and(np.asarray(pred_codes) == i, np.asarray(true_codes) == i)) for i in range(length)], dtype=float)
+    tn = np.array([np.sum(np.logical_and(np.asarray(pred_codes) != i, np.asarray(true_codes) != i)) for i in range(length)], dtype=float)
+    fp = np.array([np.sum(np.logical_and(np.asarray(pred_codes) == i, np.asarray(true_codes) != i)) for i in range(length)], dtype=float)
+    fn = np.array([np.sum(np.logical_and(np.asarray(pred_codes) != i, np.asarray(true_codes) == i)) for i in range(length)], dtype=float)
 
 
 
 
+    precision = np.divide(tp, tp+fp, out=np.zeros_like(tp), where=(tp+fp)!=0)
+    recall = np.divide(tp, tp+fn, out=np.zeros_like(tp), where=(tp+fn)!=0)
+    accuracy = np.divide(tp+tn, tp+tn+fp+fn)
+    print(len(max(sortedLabelStrings, key=len)))
 
+    labelMaxFormat = '{0: >'+str(len(max(sortedLabelStrings, key=len)))+'}'
+    fill = labelMaxFormat.format('')
 
+    string = f"{fill}   accuracy  precision  recall \n"
+    for i in range(length):
+        lableStr = f"{labelMaxFormat.format(sortedLabelStrings[i])}     {accuracy[i]:.3f}     {precision[i]:.3f}     {recall[i]:.3f} \n"
+        string += lableStr
+    print(string)
+    # print(f"precision: {np.divide(tp, tp+fp, out=np.zeros_like(tp), where=(tp+fp)!=0)}")
+    # print(f"recall: {np.divide(tp, tp+fn, out=np.zeros_like(tp), where=(tp+fn)!=0)}")
+    # print(f"accuracy: {np.divide(tp+tn, tp+tn+fp+fn)}")
 
-
-
-    print(f"precision: {np.divide(tp, tp+fp, out=np.zeros_like(tp), where=(tp+fp)!=0)}")
-    print(f"recall: {np.divide(tp, tp+fn, out=np.zeros_like(tp), where=(tp+fn)!=0)}")
-    print(f"correct classified: {np.divide(tp, tp+fn, out=np.zeros_like(tp), where=(tp+fn)!=0)}")
     #print(f"recall: {np.divide(tp, tp+fn, out=np.ones_like(tp), where=(tp+fn)!=0)}")
-    return tn
+    return tp, tn, fp, fn
 
 
 
-print(classificationReport([2,1,1,1,3], [2,1,0,2,3], ["a", "b", "c", "d"]))
+#print(classificationReport([2,1,1,1,3], [2,1,0,2,3], ["a", "b", "c", "dsss"]))
