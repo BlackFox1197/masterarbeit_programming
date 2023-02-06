@@ -17,8 +17,8 @@ class ModelTrainer():
             batch_size: int,
             lr=2e-4,
             save_model_every=1000,
-            #loss_fn=nn.CrossEntropyLoss(),
-            loss_fn=nn.BCEWithLogitsLoss(),
+            loss_fn=nn.CrossEntropyLoss(),
+            #loss_fn=nn.BCEWithLogitsLoss(),
             need_reshape = True,
             model_path = "content/customModel"
 

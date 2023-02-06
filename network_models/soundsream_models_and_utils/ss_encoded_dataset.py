@@ -122,18 +122,21 @@ class ss_encoded_dataset(Dataset):
         end = len(tensors)%itersize
 
         df[self.inputcolumn] = tensors[0:itersize]
+        dfInter[self.labelcolumn] = emotions[0:itersize]
         for i in range(parts - 1):
             dfInter = pd.DataFrame()
             dfInter[self.inputcolumn] = tensors[(i+1)*itersize:(i+2)*itersize]
+            dfInter[self.labelcolumn] = emotions[(i+1)*itersize:(i+2)*itersize]
             gc.collect()
             df = df.append(dfInter)
 
         dfInter = pd.DataFrame()
         gc.collect()
         dfInter[self.inputcolumn] = tensors[(parts*itersize):(parts*itersize+end)]
+        dfInter[self.labelcolumn] = emotions[(parts*itersize):(parts*itersize+end)]
         gc.collect()
-        df = df[self.inputcolumn].append(dfInter[self.inputcolumn])
+        df = df.append(dfInter)
         gc.collect()
 
-        df[self.labelcolumn] = emotions
+        #df[self.labelcolumn] = emotions
         return df

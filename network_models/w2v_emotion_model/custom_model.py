@@ -47,7 +47,7 @@ class W2V_EmotionClassifierSevenEmos(nn.Module):
         x = self.linear3(x)
         x = relu(x)
         x = self.linear4(x)
-        y = relu(x)
+        y = tanh(x)
         y = self.linear5(y)
         # y = tanh(y)
         y = softmax(y)
