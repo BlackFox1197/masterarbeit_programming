@@ -7,3 +7,4 @@ numpy
 datasets
 transformers
 matplotlib
+seaborn
