@@ -9,7 +9,7 @@ from network_models.w2v_emotion_model.custom_collator import DataCollatorCTCWith
 from utils.eval_utils import classificationReport
 
 
-class ModelTrainer():
+class SSGenModelTrainer():
     def __init__(
             self,
             model: nn.Module,
@@ -67,6 +67,7 @@ class ModelTrainer():
                 self.save_best(self.model, acc, t, old_acc, higest_epoch)
                 highest_acc, higest_epoch = acc, t
 
+        return highest_acc, higest_epoch
 
 
 
