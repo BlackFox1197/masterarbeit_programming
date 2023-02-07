@@ -28,13 +28,14 @@ class W2V_EmotionClassifierSevenEmos(nn.Module):
         self.linear2 = torch.nn.Linear(300, 300)
         self.linear3 = torch.nn.Linear(300, 100)
         self.linear4 = torch.nn.Linear(100, 4)
-        self.linear5 = torch.nn.Linear(4, 7)
+        self.linear5 = torch.nn.Linear(4, 4)
+        self.linear6 = torch.nn.Linear(4, 7)
         #pass dimension (along axis 0)
         self.softmax = torch.nn.Softmax(dim=0)
 
         self.initialize_weights()
 
-    def forward(self, x, labels=None):
+    def forward(self, x, return_with_dims = False, soft_max = False):
         relu = F.relu
         tanh = F.tanh
         softmax = F.softmax
@@ -49,10 +50,14 @@ class W2V_EmotionClassifierSevenEmos(nn.Module):
         x = self.linear4(x)
         y = tanh(x)
         y = self.linear5(y)
-        # y = tanh(y)
-        y = softmax(y)
+        y = tanh(x)
+        y = self.linear6(y)
 
-        return y
+        # y = tanh(y)
+
+        y = softmax(y) if soft_max else y
+
+        return y, x if return_with_dims else y
 
 
     def initialize_weights(self):
@@ -89,27 +94,11 @@ class Wav2Vec2ForSpeechClassification(Wav2Vec2PreTrainedModel):
         outputs = self.wav2vec2(
             input_values,
         )
-        hidden_states = outputs[0]
-        #hidden_states = self.merged_strategy(hidden_states, mode=self.pooling_mode)
+
         hidden_states = torch.mean(outputs[0], dim=1)
         logits = self.classifier(hidden_states)
-
-
-        #ohe = Lambda(lambda y: torch.zeros(7, dtype=torch.float).to("cuda").scatter_(dim=1, index=torch.tensor(y), value=1))
         return logits
-        # loss_fct = BCEWithLogitsLoss()
-        # loss = loss_fct(logits, labels)
 
-        # if not return_dict:
-        #     output = (logits,) + outputs[2:]
-        #     return ((loss,) + output) if loss is not None else output
-
-        # return ClassifierOutput(
-        #     loss=loss,
-        #     logits=logits,
-        #     hidden_states=outputs.hidden_states,
-        #     attentions=outputs.attentions,
-        # )
 
     def merged_strategy(
             self,

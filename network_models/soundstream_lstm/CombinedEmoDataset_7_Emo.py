@@ -1,5 +1,5 @@
 import os
-from typing import Tuple
+from typing import Tuple, List
 
 import numpy as np
 import pandas as pd
@@ -132,7 +132,7 @@ class CombinedEmoDataSet_7_emos(Dataset):
 
     def __init__(self, directory_tess: None | str = None, directory_ravdess: None | str = None,
                  directory_cafe: None | str = None, directory_mesd: None | str = None,
-                 transFormAudio: callable = lambda x: x, device="cuda"):
+                 transFormAudio: callable = lambda x: x, device="cuda", filter_emotions: None | List[str] = None):
         self.device = device
 
         self.directory_tess = directory_tess
@@ -140,6 +140,7 @@ class CombinedEmoDataSet_7_emos(Dataset):
         self.directory_ravdess = directory_ravdess
         self.directory_cafe = directory_cafe
 
+        self.filter_emotions = filter_emotions
         self.transFormAudio = transFormAudio
         self.dataFrame = self.load_custom_dataset()
         label_list = self.dataFrame.groupby(self.labelcolumn)[self.labelcolumn].count().index.array.to_numpy()
@@ -155,6 +156,7 @@ class CombinedEmoDataSet_7_emos(Dataset):
         label = self.dataFrame.iloc[idx][self.labelcolumn]
         return audio, label
 
+
     def load_custom_dataset(self) -> pd.DataFrame:
         tess_paths, tess_emo = self.loadTess() if self.directory_tess is not None else ([], [])
         mesd_paths, mesd_emo = self.loadMesd() if self.directory_mesd is not None else ([], [])
@@ -167,6 +169,10 @@ class CombinedEmoDataSet_7_emos(Dataset):
         df = pd.DataFrame()
         df[self.inputcolumn] = paths
         df[self.labelcolumn] = emotions
+
+        if self.filter_emotions is not None:
+            df = df[~df[self.labelcolumn].isin(self.filter_emotions)]
+
         return df
 
     def loadMesd(self) -> Tuple:
