@@ -51,6 +51,7 @@ class ModelTrainer():
 
         Path(self.model_path).mkdir(parents=True, exist_ok=True)
         highest_acc = 0
+        higest_epoch = None
         #optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
 
         for t in range(self.num_epochs):
@@ -59,7 +60,12 @@ class ModelTrainer():
             print(f"Epoch {t + 1}\n-------------------------------")
             self.train_loop(train_dataloader, self.model, self.loss_fn, optimizer)
             acc = self.test_loop(test_dataloader, self.model, self.loss_fn)
-            if(acc > 0.5)
+
+            # this is for saving the best accuracy up until now
+            if(self.save_highest_acc_min_acc != None and self.save_highest_acc_min_acc < acc and acc > highest_acc):
+                old_acc = highest_acc if highest_acc != 0 else None
+                self.save_best(self.model, acc, t, old_acc, higest_epoch)
+                highest_acc, higest_epoch = acc, t
 
 
 
