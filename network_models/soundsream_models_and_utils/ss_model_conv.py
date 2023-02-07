@@ -8,7 +8,7 @@ kernelSize = 5
 
 class SSConvModel3Sec(nn.Module):
 
-    def __init__(self, xSize, ySize):
+    def __init__(self, xSize, ySize, num_emotions=7):
         enda = int((((xSize - np.floor(kernelSize / 2) * 2) / 2) - (np.floor(kernelSize / 2) * 2)) // 2)
         endb = int((((ySize - np.floor(kernelSize / 2) * 2) / 2) - (np.floor(kernelSize / 2) * 2)) // 2)
 
@@ -21,7 +21,8 @@ class SSConvModel3Sec(nn.Module):
         self.linear2 = torch.nn.Linear(300, 300)
         self.linear3 = torch.nn.Linear(300, 100)
         self.linear4 = torch.nn.Linear(100, 4)
-        self.linear5 = torch.nn.Linear(4, 7)
+        self.linear5 = torch.nn.Linear(4, 4)
+        self.linear6 = torch.nn.Linear(4, num_emotions)
 
         self.dropouts = torch.nn.Dropout(0.2)
 
@@ -48,7 +49,11 @@ class SSConvModel3Sec(nn.Module):
         x = self.linear4(x)
         y = tanh(x)
         y = self.linear5(y)
-        y = softmax(y)
+        y = tanh(y)
+        y = self.linear6(y)
+
+
+        y = softmax(y) if returnWithDims else y
 
         if (returnWithDims):
             return x, y
