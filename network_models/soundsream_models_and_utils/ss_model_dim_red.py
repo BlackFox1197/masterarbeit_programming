@@ -21,7 +21,7 @@ class SSDimRedModel(SSBaseModel):
         softmax = F.softmax
 
         if(self.reduceDims):
-            x = torch.mean(x, dim=1)
+            x = torch.mean(x, dim=3)
 
         x = self.linear1(x)
         x = relu(x)

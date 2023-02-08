@@ -27,6 +27,7 @@ class SSBaseModel(nn.Module):
         y = self.base_linear4(y)
 
         y = softmax(y) if soft_max else y
+        y = torch.squeeze(y, dim=1)
 
         if return_with_dims:
             return x, y

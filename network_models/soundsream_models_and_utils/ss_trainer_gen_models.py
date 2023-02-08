@@ -1,3 +1,4 @@
+import gc
 import os
 from pathlib import Path
 
@@ -48,11 +49,11 @@ class SSGenModelTrainer():
         train_dataloader = DataLoader(self.train_dataset, shuffle=True, batch_size=self.batch_size, num_workers=2)
         test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=2)
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
+        #optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
 
         Path(self.model_path).mkdir(parents=True, exist_ok=True)
         highest_acc = 0
         higest_epoch = None
-        #optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
 
         for t in range(self.num_epochs):
             if(t % self.save_model_every == 0):
@@ -66,7 +67,7 @@ class SSGenModelTrainer():
                 old_acc = highest_acc if highest_acc != 0 else None
                 self.save_best(self.model, acc, t, old_acc, higest_epoch)
                 highest_acc, higest_epoch = acc, t
-
+            gc.collect()
         return highest_acc, higest_epoch
 
 
@@ -91,6 +92,7 @@ class SSGenModelTrainer():
             if batch % 100 == 0:
                 loss, current = loss.item(), batch * len(X)
                 print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+            #gc.collect()
 
 
     def test_loop(self, dataloader, model, loss_fn): #TODO: Add more than accuracy (recall, precision)
@@ -129,6 +131,7 @@ class SSGenModelTrainer():
             return self.model_path + f"emo_reco_best_ep{epoch_in}_acc_{acc_in*100:.0f}"
 
         new_path = gen_filename(acc, epoch)
+        old_string = ""
         if old_acc is not None:
             old_path = gen_filename(old_acc, old_epoch)
             if os.path.exists(old_path):

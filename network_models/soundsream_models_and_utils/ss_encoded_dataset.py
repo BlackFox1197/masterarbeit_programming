@@ -57,6 +57,10 @@ class ss_encoded_dataset(Dataset):
     """ This dataset encodes an audio dataset with soundsream"""
     inputcolumn = "encoded"
     labelcolumn = "emotionCode"
+    clear_label_colums = "clear_emotion"
+
+    # save_encode_column = "encode_col"
+    # save_dataset_column = "ds_col"
 
     def __init__(self, data_set: CombinedEmoDataSet_7_emos | DatasetGeneric, sound_stream: SoundStream | None, num_labels = 7,
                  one_hot_encoded = True, device = "cpu", csvPath: str | None = None):
@@ -69,14 +73,17 @@ class ss_encoded_dataset(Dataset):
         self.dataSet = data_set
 
         if(csvPath is None):
+            self.label_list = self.dataSet.label_list
             self.encodedData: pd.DataFrame = self._encodeWithSoundStream()
         else:
-            self.encodedData: pd.DataFrame = self.loadEncoding(csvPath)
+            self.encodedData = self.loadEncoding(csvPath)
+            label_list = self.encodedData.groupby(self.clear_label_colums)[self.clear_label_colums].count().index.array.to_numpy()
+            self.label_list = np.sort(label_list)
 
         self.target_transform = self.indices_to_one_hot
 
     def __getitem__(self, index):
-        return self.encodedData.iloc[index][self.inputcolumn], self.target_transform(self.encodedData.iloc[index][self.labelcolumn])
+        return self.encodedData.iloc[index][self.inputcolumn], self.target_transform(self.encodedData.iloc[index][self.labelcolumn])[0]
 
 
     def __len__(self):
@@ -88,12 +95,17 @@ class ss_encoded_dataset(Dataset):
         return np.eye(self.num_labels)[targets]
 
     def saveEncoding(self, path):
+
+        #saveDf[self.save_dataset_column] = self.dataSet
+
         self.encodedData.to_pickle(path)
 
     def loadEncoding(self, path):
         dataframe = pd.read_pickle(path)
+
         self.num_labels = max(dataframe[self.labelcolumn])[0] +1
-        return pd.read_pickle(path)
+
+        return dataframe
 
     def emoToId(self, emotion: str):
         return np.where(self.dataSet.label_list == emotion)[0]
@@ -104,6 +116,7 @@ class ss_encoded_dataset(Dataset):
     def _encodeWithSoundStream(self):
         tensors = []
         emotions = []
+        emotions_names = []
         i = 0
         for sample in iter(self.dataSet):
             i += 1
@@ -113,6 +126,7 @@ class ss_encoded_dataset(Dataset):
                 data = self.soundStream(sample[0], return_encoded =True)
             tensors.append(data[0].detach().cpu())
             emotions.append(self.emoToId(sample[1]))
+            emotions_names.append(sample[1])
 
         itersize = 3000
         df = pd.DataFrame()
@@ -123,10 +137,12 @@ class ss_encoded_dataset(Dataset):
 
         df[self.inputcolumn] = tensors[0:itersize]
         df[self.labelcolumn] = emotions[0:itersize]
+        df[self.clear_label_colums] = emotions_names[0:itersize]
         for i in range(parts - 1):
             dfInter = pd.DataFrame()
             dfInter[self.inputcolumn] = tensors[(i+1)*itersize:(i+2)*itersize]
             dfInter[self.labelcolumn] = emotions[(i+1)*itersize:(i+2)*itersize]
+            dfInter[self.clear_label_colums] = emotions_names[(i+1)*itersize:(i+2)*itersize]
             gc.collect()
             df = df.append(dfInter)
 
@@ -135,6 +151,7 @@ class ss_encoded_dataset(Dataset):
         if itersize < len(tensors) and end != 0:
             dfInter[self.inputcolumn] = tensors[(parts*itersize):(parts*itersize+end)]
             dfInter[self.labelcolumn] = emotions[(parts*itersize):(parts*itersize+end)]
+            dfInter[self.clear_label_colums] = emotions_names[(parts*itersize):(parts*itersize+end)]
             gc.collect()
             df = df.append(dfInter)
         gc.collect()

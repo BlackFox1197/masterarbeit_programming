@@ -10,8 +10,8 @@ class SSFlatModel(SSBaseModel):
     def __init__(self, x_size=512, y_size=175, num_emotions=7):  # 175 is equivalent to 3,5 seconds with a sampling-rate of 16000
         super().__init__(num_emotions=num_emotions)
 
-        self.linear1 = torch.nn.Linear(x_size * y_size, 8000)
-        self.linear2 = torch.nn.Linear(8000, 300)
+        self.linear1 = torch.nn.Linear(x_size * y_size, 3000)
+        self.linear2 = torch.nn.Linear(3000, 300)
 
 
     def forward(self, x, return_with_dims=False, soft_max = False):
