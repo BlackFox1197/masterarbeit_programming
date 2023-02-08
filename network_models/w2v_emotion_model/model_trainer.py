@@ -3,7 +3,7 @@ from torch import nn
 from torch.utils.data import Dataset, DataLoader
 
 from network_models.w2v_emotion_model.custom_collator import DataCollatorCTCWithPadding
-from utils.eval_utils import classificationReport
+from utils.eval_utils import classificationReport, confusion_matrix
 
 
 class ModelTrainer():
@@ -47,8 +47,8 @@ class ModelTrainer():
     def train(self):
         train_dataloader = DataLoader(self.train_dataset, shuffle=True, batch_size=self.batch_size, num_workers=2 ,collate_fn=self.colate_fn)
         test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=2,collate_fn=self.colate_fn)
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
-        #optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
+        #optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
+        optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
 
         for t in range(self.num_epochs):
             if(t % self.save_model_every == 0):
@@ -108,6 +108,8 @@ class ModelTrainer():
 
         if(self.labelList is not None):
             classificationReport(true, preds, self.labelList)
+            confusion_matrix(true, preds, self.labelList)
+
         test_loss /= num_batches
         correct /= size
         print(f"Test Error: \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")

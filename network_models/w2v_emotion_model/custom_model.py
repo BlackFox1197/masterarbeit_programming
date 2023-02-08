@@ -19,7 +19,7 @@ class ClassifierOutput(ModelOutput):
 
 class W2V_EmotionClassifierSevenEmos(nn.Module):
 
-    def __init__(self):
+    def __init__(self, num_emotions = 7):
         super().__init__()
         self.linear1 = torch.nn.Linear(in_features=768, out_features=300)
         self.activation = torch.nn.LeakyReLU()
@@ -28,7 +28,7 @@ class W2V_EmotionClassifierSevenEmos(nn.Module):
         self.linear2 = torch.nn.Linear(300, 100)
         self.linear3 = torch.nn.Linear(100, 4)
         self.linear4 = torch.nn.Linear(4, 4)
-        self.linear5 = torch.nn.Linear(4, 7)
+        self.linear5 = torch.nn.Linear(4, num_emotions)
         #pass dimension (along axis 0)
         self.softmax = torch.nn.Softmax(dim=0)
 
@@ -36,7 +36,7 @@ class W2V_EmotionClassifierSevenEmos(nn.Module):
 
     def forward(self, x, return_with_dims = False, soft_max = False):
         relu = F.relu
-        tanh = F.tanh
+        tanh = torch.tanh
         softmax = F.softmax
 
         x = self.linear1(x)
@@ -47,14 +47,17 @@ class W2V_EmotionClassifierSevenEmos(nn.Module):
         x = self.linear3(x)
         y = tanh(x)
         y = self.linear4(y)
-        y = tanh(x)
+        y = relu(x)
         y = self.linear5(y)
 
         # y = tanh(y)
 
         y = softmax(y) if soft_max else y
 
-        return y, x if return_with_dims else y
+        if return_with_dims:
+            return y, x
+        else:
+            return y
 
 
     def initialize_weights(self):
@@ -69,7 +72,7 @@ class W2V_EmotionClassifierSevenEmos(nn.Module):
 
 
 class Wav2Vec2ForSpeechClassification(Wav2Vec2PreTrainedModel):
-    def __init__(self, model_name_or_path, pooling_mode, device):
+    def __init__(self, model_name_or_path, pooling_mode, device, num_emotions = 7):
         config = Wav2Vec2Config(name_or_path=model_name_or_path)
         super().__init__(config)
         self.deviceE = device
@@ -77,7 +80,7 @@ class Wav2Vec2ForSpeechClassification(Wav2Vec2PreTrainedModel):
 
 
         self.wav2vec2 = Wav2Vec2Model(config).to(device)
-        self.classifier = (W2V_EmotionClassifierSevenEmos()).to(device)
+        self.classifier = (W2V_EmotionClassifierSevenEmos(num_emotions=num_emotions)).to(device)
 
         #self.init_weights()
 
@@ -87,13 +90,14 @@ class Wav2Vec2ForSpeechClassification(Wav2Vec2PreTrainedModel):
     def forward(
             self,
             input_values,
+            return_with_dims=False, soft_max=False
     ):
         outputs = self.wav2vec2(
             input_values,
         )
 
         hidden_states = torch.mean(outputs[0], dim=1)
-        logits = self.classifier(hidden_states)
+        logits = self.classifier(hidden_states, return_with_dims= return_with_dims, soft_max = soft_max)
         return logits
 
 
