@@ -15,7 +15,7 @@ class SSBaseModel(nn.Module):
 
     def forward(self, x, return_with_dims=False, soft_max=False):
         relu = F.relu
-        tanh = F.tanh
+        tanh = torch.tanh
         softmax = F.softmax
 
         x = self.base_linear1(x)

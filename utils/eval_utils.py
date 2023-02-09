@@ -4,7 +4,7 @@ import sklearn.metrics
 from numba import float64
 
 
-def classificationReport(true_codes, pred_codes, sortedLabelStrings, printReport = True):
+def classificationReport(true_codes, pred_codes, sortedLabelStrings, printReport = True, return_string = True):
     assert len(true_codes) == len(pred_codes)
     length = len(sortedLabelStrings)
     ground_true_occurances = np.array([np.count_nonzero(np.array(true_codes) == i) for i in range(len(sortedLabelStrings))])
@@ -20,9 +20,8 @@ def classificationReport(true_codes, pred_codes, sortedLabelStrings, printReport
 
     precision = np.divide(tp, tp+fp, out=np.zeros_like(tp), where=(tp+fp)!=0)
     recall = np.divide(tp, tp+fn, out=np.zeros_like(tp), where=(tp+fn)!=0)
-    #accuracy = np.divide(np.sum(tp+tn), np.sum(tp+tn+fp+fn))
     accuracy = correct_occurances/len(pred_codes)
-    #print(len(max(sortedLabelStrings, key=len)))
+
 
     labelMaxFormat = '{0: >'+str(len(max(max(sortedLabelStrings, key=len), "avg")))+'}'
     fill = labelMaxFormat.format('')
@@ -36,11 +35,10 @@ def classificationReport(true_codes, pred_codes, sortedLabelStrings, printReport
     string += f"{labelMaxFormat.format('avg')}     {accuracy:.3f}     {np.mean(precision):.3f}     {np.mean(recall):.3f}    \n"
     if(printReport):
         print(string)
-    # print(f"precision: {np.divide(tp, tp+fp, out=np.zeros_like(tp), where=(tp+fp)!=0)}")
-    # print(f"recall: {np.divide(tp, tp+fn, out=np.zeros_like(tp), where=(tp+fn)!=0)}")
-    # print(f"accuracy: {np.divide(tp+tn, tp+tn+fp+fn)}")
 
-    #print(f"recall: {np.divide(tp, tp+fn, out=np.ones_like(tp), where=(tp+fn)!=0)}")
+    if(return_string):
+        return string
+
     return tp, tn, fp, fn
 
 
@@ -63,8 +61,9 @@ def confusion_matrix(true_codes, pred_codes, sortedLabelStrings, printReport = T
         bodyStr += labelMaxFormat.format(f"{np.sum(matrix[i])}\n")
     headerStr += labelMaxFormat.format("support\n")
 
-
-    print(headerStr + bodyStr)
+    if(printReport):
+        print(headerStr + bodyStr)
+    return headerStr+bodyStr
 
 
 

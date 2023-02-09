@@ -7,7 +7,7 @@ from torch import nn
 from torch.utils.data import Dataset, DataLoader
 
 from network_models.w2v_emotion_model.custom_collator import DataCollatorCTCWithPadding
-from utils.eval_utils import classificationReport
+from utils.eval_utils import classificationReport, confusion_matrix
 
 
 class SSGenModelTrainer():
@@ -54,21 +54,26 @@ class SSGenModelTrainer():
         Path(self.model_path).mkdir(parents=True, exist_ok=True)
         highest_acc = 0
         higest_epoch = None
+        higest_true = []
+        higest_pred = []
 
         for t in range(self.num_epochs):
             if(t % self.save_model_every == 0):
                 torch.save(self.model.state_dict(), self.model_path + f"emo_reco_{t}.pth")
             print(f"Epoch {t + 1}\n-------------------------------")
             self.train_loop(train_dataloader, self.model, self.loss_fn, optimizer)
-            acc = self.test_loop(test_dataloader, self.model, self.loss_fn)
+            acc, true, preds = self.test_loop(test_dataloader, self.model, self.loss_fn)
 
-            # this is for saving the best accuracy up until now
-            if(self.save_highest_acc_min_acc != None and self.save_highest_acc_min_acc < acc and acc > highest_acc):
-                old_acc = highest_acc if highest_acc != 0 else None
-                self.save_best(self.model, acc, t, old_acc, higest_epoch)
-                highest_acc, higest_epoch = acc, t
+            if(acc > highest_acc):
+                highest_acc, higest_epoch, higest_true, higest_pred = acc, t, true, preds
+                # this is for saving the best accuracy up until now
+                if(self.save_highest_acc_min_acc != None and self.save_highest_acc_min_acc < acc):
+                    #old_acc = highest_acc if highest_acc != 0 else None
+                    old_acc = highest_acc
+                    self.save_best(self.model, acc, t, true, preds, old_acc, higest_epoch)
+                    highest_acc, higest_epoch = acc, t
             gc.collect()
-        return highest_acc, higest_epoch
+        return highest_acc, higest_epoch, higest_true, higest_pred
 
 
 
@@ -120,15 +125,18 @@ class SSGenModelTrainer():
         test_loss /= num_batches
         correct /= size
         print(f"Test Error: \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
-        return correct
+        return correct, true, preds
 
 
 
-    def save_best(self, model, acc, epoch, old_acc = None, old_epoch = None):
+    def save_best(self, model, acc, epoch, ground_truth, pred, old_acc = None, old_epoch = None, ):
         """saves model with accuracy and deletes the old best model"""
 
         def gen_filename(acc_in, epoch_in):
             return self.model_path + f"emo_reco_best_ep{epoch_in}_acc_{acc_in*100:.0f}"
+
+        modelName = f"{model.__class__}".split('.')[-1].split("'>")[0]
+        self.genAndSaveEvaluation(gen_filename(acc, epoch), ground_truth, pred, acc, epoch, modelName, self.labelList)
 
         new_path = gen_filename(acc, epoch)
         old_string = ""
@@ -136,8 +144,26 @@ class SSGenModelTrainer():
             old_path = gen_filename(old_acc, old_epoch)
             if os.path.exists(old_path):
                 os.remove(old_path)
-            print(f"Old best model deleted from \"{old_path}\"")
-            old_string = f"Old accuracy: {(100 * old_acc):>0.1f},"
+                print(f"Old best model deleted from \"{old_path}\"")
+                old_string = f"Old accuracy: {(100 * old_acc):>0.1f},"
+            if os.path.exists(old_path+".md"):
+                os.remove(old_path+".md")
+
 
         torch.save(model.state_dict(), new_path)
         print(f"New best model saved to \"{new_path}\"! {old_string} new accuracy: {(100 * acc):>0.1f}")
+
+
+    @staticmethod
+    def genAndSaveEvaluation(filename, ground_truth, pred, acc, epoch, modelName, labelList):
+        print("Generating Report... \n")
+        save_str = "#" + modelName + "\n"
+        save_str += "## Evaluations:"
+        save_str += "```"+classificationReport(true_codes=ground_truth, pred_codes=pred,sortedLabelStrings=labelList, printReport=False, return_string=True) +"```\n \n"
+        save_str += "```"+confusion_matrix(true_codes=ground_truth, pred_codes=pred,sortedLabelStrings=labelList, printReport=False) + "```\n"
+        save_str += f"Max Accuracy: {acc} in epoch {epoch}"
+
+        file = open(filename+".md", "w")
+        file.write(save_str)
+        file.close()
+        print(f"Report saved to: {filename}.md \n")
