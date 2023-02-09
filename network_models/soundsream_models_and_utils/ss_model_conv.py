@@ -10,7 +10,7 @@ kernelSize = 5
 
 class SSConvModel3Sec(SSBaseModel):
 
-    def __init__(self, xSize, ySize, num_emotions=7):
+    def __init__(self, xSize, ySize, num_emotions=7, eval_mode = False):
         enda = int((((xSize - np.floor(kernelSize / 2) * 2) / 2) - (np.floor(kernelSize / 2) * 2)) // 2)
         endb = int((((ySize - np.floor(kernelSize / 2) * 2) / 2) - (np.floor(kernelSize / 2) * 2)) // 2)
 
@@ -22,7 +22,7 @@ class SSConvModel3Sec(SSBaseModel):
         self.linear1 = torch.nn.Linear(16 * endb * enda, 300)
         self.linear2 = torch.nn.Linear(300, 300)
 
-        self.dropouts = torch.nn.Dropout(0.2)
+        self.dropouts = torch.nn.Dropout(0.2 if not eval_mode else 0)
 
 
 
