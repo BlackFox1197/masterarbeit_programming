@@ -33,7 +33,7 @@ class ExperimentsTrainer:
             gc.collect()
             self.run_dim_red_model_test(lr, self.epochs_per_model, trail)
             gc.collect()
-            self.run_flat_model_test(lr, self.epochs_per_model, trail)
+            #self.run_flat_model_test(lr, self.epochs_per_model, trail)
             gc.collect()
 
 

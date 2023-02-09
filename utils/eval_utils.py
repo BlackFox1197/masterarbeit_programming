@@ -22,7 +22,7 @@ def classificationReport(true_codes, pred_codes, sortedLabelStrings, printReport
     recall = np.divide(tp, tp+fn, out=np.zeros_like(tp), where=(tp+fn)!=0)
     #accuracy = np.divide(np.sum(tp+tn), np.sum(tp+tn+fp+fn))
     accuracy = correct_occurances/len(pred_codes)
-    print(len(max(sortedLabelStrings, key=len)))
+    #print(len(max(sortedLabelStrings, key=len)))
 
     labelMaxFormat = '{0: >'+str(len(max(max(sortedLabelStrings, key=len), "avg")))+'}'
     fill = labelMaxFormat.format('')
