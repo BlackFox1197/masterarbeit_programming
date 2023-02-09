@@ -26,7 +26,7 @@ class SSConvModel3Sec(SSBaseModel):
 
 
 
-    def forward(self, x, returnWithDims=False, soft_max = False):
+    def forward(self, x, return_with_dims=False, soft_max = False):
         relu = F.relu
         tanh = F.tanh
         softmax = F.softmax
@@ -42,4 +42,4 @@ class SSConvModel3Sec(SSBaseModel):
         x = self.dropouts(x)
         x = self.linear2(x)
         x = relu(x)
-        return super().forward(x, return_with_dims=returnWithDims, soft_max=soft_max)
+        return super().forward(x, return_with_dims=return_with_dims, soft_max=soft_max)

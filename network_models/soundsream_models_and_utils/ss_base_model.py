@@ -21,8 +21,8 @@ class SSBaseModel(nn.Module):
         x = self.base_linear1(x)
         x = tanh(x)
         x = self.base_linear2(x)
-        y = tanh(x)
-        y = self.base_linear3(y)
+        x = tanh(x)
+        y = self.base_linear3(x)
         y = tanh(y)
         y = self.base_linear4(y)
 
@@ -30,6 +30,6 @@ class SSBaseModel(nn.Module):
         y = torch.squeeze(y, dim=1)
 
         if return_with_dims:
-            return x, y
+            return torch.squeeze(x, dim=1), y
 
         return y
