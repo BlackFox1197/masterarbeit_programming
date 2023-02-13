@@ -193,6 +193,7 @@ class EncoderLayer(nn.Module):
         out = self.dropout_2(out)
         # add residual connection
         out = out + _out
+
         # return output
         return out
 
@@ -271,7 +272,7 @@ class Encoder(nn.Module):
         # define embedding layer -> NOT NEEDED -> we use our symbol embedding layer instead!
         # self.embed = nn.Embedding(vocab_size, embed_dim)
         # define positional encoding
-        # self.positional_embedding = PositionalEmbedding(max_seq_len, embed_dim)
+        self.positional_embedding = PositionalEmbedding(max_seq_len, embed_dim)
         # define encoder layers
         self.layers = nn.ModuleList([EncoderLayer(embed_dim, n_heads, ff_dim, dropout) for _ in range(n_layers)])
         # define normalisation
@@ -281,8 +282,8 @@ class Encoder(nn.Module):
         # get embedding
         #out = self.embed(x)
         # add positional embedding
-        #out = out + self.positional_embedding(x)
-        out = x # ADDED -> TODO: refactor code to make the embedding optional!!
+        out = x + self.positional_embedding(x)
+        #out = x # ADDED -> TODO: refactor code to make the embedding optional!!
         # pass through encoder layers
         for layer in self.layers:
             out = layer(out, mask)
