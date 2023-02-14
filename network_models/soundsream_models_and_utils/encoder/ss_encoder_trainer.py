@@ -83,11 +83,6 @@ class SSEncoderTrainer():
                         torch.sum(dp, dim=0))), dim=0).to(self.device)
             loss = loss_fn(real_pred, target_output)
 
-            if np.isnan(loss.item()):
-                print("-----------------------------------------------------------------------------------------")
-                print(loss.item(), "asdasdasdasdasdasdad")
-                print(real_pred)
-                print(pred)
             # Backpropagation
             optimizer.zero_grad()
             loss.backward()
