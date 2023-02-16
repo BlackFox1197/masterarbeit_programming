@@ -47,7 +47,12 @@ class ss_encoded_dataset_full(Dataset):
 
 
     def init_soundstream(self, sound_stream_path) -> SoundStream:
-        soundstream = SoundStream(codebook_size=1024,rq_num_quantizers=8).to(self.device)
+        soundstream = SoundStream(
+            codebook_size=1024,
+            rq_num_quantizers=8,
+            attn_window_size=256,  # local attention receptive field at bottleneck
+            attn_depth=2
+        ).to(self.device)
         soundstream.load(sound_stream_path)
         for param in soundstream.parameters():
             param.requires_grad = False
@@ -128,7 +133,7 @@ class ss_encoded_dataset(Dataset):
             emotions.append(self.emoToId(sample[1]))
             emotions_names.append(sample[1])
 
-        itersize = 3000
+        itersize = 2500
         df = pd.DataFrame()
         dfInter = pd.DataFrame()
 

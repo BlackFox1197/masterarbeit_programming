@@ -15,5 +15,6 @@ dataset = ssed.ss_encoded_dataset_full(
     directory_mesd="/home/ckwdani/Music/emotionDatasets/converted_mono/mesd",
     device="cuda",
     #sound_stream_path="../notebooks/content/soundstream/vers0.7.4/01_Soundstream_7_x_new_libri_full/5_3250/soundstream.3250.pt")
-    sound_stream_path="/home/ckwdani/Programming/Projects/masterarbeit/Jupyter/mainProject/notebooks/content/soundstream/vers0.7.4/01_Soundstream_7_x_new_libri_full/currentSelection/soundstream.72500.pt")
-dataset.saveEncoding("../notebooks/content/data/allEncodings.pkl")
+    #sound_stream_path="/home/ckwdani/Programming/Projects/masterarbeit/Jupyter/mainProject/notebooks/content/soundstream/vers0.7.4/01_Soundstream_7_x_new_libri_full/currentSelection/soundstream.72500.pt")
+    sound_stream_path="/home/ckwdani/Programming/Projects/masterarbeit/Jupyter/mainProject/notebooks/content/soundstream/verision0.12.1/00_10000_1e-4_bs6_gae8_dml320-32/soundstream.42500.pt")
+dataset.saveEncoding("../notebooks/content/data/allEncodings_version0_12_1.pkl")
