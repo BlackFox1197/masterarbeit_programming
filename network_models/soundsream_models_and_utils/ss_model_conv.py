@@ -26,20 +26,20 @@ class SSConvModel3Sec(SSBaseModel):
 
 
 
-    def forward(self, x, return_with_dims=False, soft_max = False):
+    def forward(self, x, return_with_dims=False, soft_max = False, eval_mode = False):
         relu = F.relu
         tanh = F.tanh
         softmax = F.softmax
         pool2d = F.max_pool2d
 
         x = pool2d(relu(self.conv1(x)), (2, 2))
-        x = self.dropouts(x)
+        x = self.dropouts(x) if not eval_mode else x
         x = pool2d(relu(self.conv2(x)), (2, 2))
         x = torch.flatten(x, 1)
 
         x = self.linear1(x)
         x = relu(x)
-        x = self.dropouts(x)
+        x = self.dropouts(x) if not eval_mode else x
         x = self.linear2(x)
         x = relu(x)
         return super().forward(x, return_with_dims=return_with_dims, soft_max=soft_max)

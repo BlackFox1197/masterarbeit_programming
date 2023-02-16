@@ -11,5 +11,5 @@ class SS_Direct_Downmapping_Model(nn.Module):
     def forward(self, x):
 
         x = x.flatten(1)
-        x = self.liear(x)
-        return x
+        x = self.linear(x)
+        return x#.norm(dim=-1, keepdim=True)

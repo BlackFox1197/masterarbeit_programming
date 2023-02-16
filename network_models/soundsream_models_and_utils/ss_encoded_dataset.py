@@ -42,6 +42,9 @@ class ss_encoded_dataset_full(Dataset):
         self.encoded_dataset.saveEncoding(path)
 
 
+    def one_hot_to_id(self, x):
+        pass
+
     def __len__(self):
         return len(self.encoded_dataset)
 
@@ -98,6 +101,7 @@ class ss_encoded_dataset(Dataset):
         """Convert an iterable of indices to one-hot encoded labels."""
         targets = np.array(data).reshape(-1)
         return np.eye(self.num_labels)[targets]
+
 
     def saveEncoding(self, path):
 

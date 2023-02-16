@@ -15,7 +15,7 @@ class SSFlatModel(SSBaseModel):
         self.dropouts = torch.nn.Dropout(0.2 if not eval_mode else 0)
 
 
-    def forward(self, x, return_with_dims=False, soft_max = False):
+    def forward(self, x, return_with_dims=False, soft_max = False, eval_mode= False):
         relu = F.relu
         tanh = F.tanh
         softmax = F.softmax
@@ -23,7 +23,7 @@ class SSFlatModel(SSBaseModel):
         x = torch.flatten(x, 1)
         x = self.linear1(x)
         x = relu(x)
-        x = self.dropouts(x)
+        x = self.dropouts(x) if not eval_mode else x
         x = self.linear2(x)
         x = relu(x)
         return super().forward(x, return_with_dims=return_with_dims, soft_max=soft_max)

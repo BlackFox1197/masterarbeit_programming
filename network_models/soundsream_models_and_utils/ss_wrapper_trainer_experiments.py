@@ -34,12 +34,12 @@ class ExperimentsTrainer:
             lr = self.start_lr /  (self.lr_quotient ** trail)
             highest_acc_c, higest_epoch_c, higest_true_c, higest_pred_c = self.run_conv_model_test(lr, self.epochs_per_model, trail)
             # generate Report
-            SSGenModelTrainer.genAndSaveEvaluation(f"Run_Nr_{trail}/conv", higest_true_c, higest_pred_c, highest_acc_c, higest_epoch_c, "Convolutional", self.dataset.encoded_dataset.label_list)
+            SSGenModelTrainer.genAndSaveEvaluation(f"{self.models_dir}/Run_Nr_{trail}/conv", higest_true_c, higest_pred_c, highest_acc_c, higest_epoch_c, "Convolutional", self.dataset.encoded_dataset.label_list)
 
             gc.collect()
             highest_acc_dr, higest_epoch_dr, higest_true_dr, higest_pred_dr = self.run_dim_red_model_test(lr, self.epochs_per_model, trail)
             # generate Report
-            SSGenModelTrainer.genAndSaveEvaluation(f"Run_Nr_{trail}/dimred", higest_true_dr, higest_pred_dr, highest_acc_dr, higest_epoch_dr, "Dimension Reduced", self.dataset.encoded_dataset.label_list)
+            SSGenModelTrainer.genAndSaveEvaluation(f"{self.models_dir}/Run_Nr_{trail}/dimred", higest_true_dr, higest_pred_dr, highest_acc_dr, higest_epoch_dr, "Dimension Reduced", self.dataset.encoded_dataset.label_list)
             gc.collect()
             #highest_acc_f, higest_epoch_f, higest_true_f, higest_pred_f = self.run_flat_model_test(lr, self.epochs_per_model, trail)
             ## generate Report
