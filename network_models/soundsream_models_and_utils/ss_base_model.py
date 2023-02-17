@@ -23,7 +23,7 @@ class SSBaseModel(nn.Module):
         x = self.base_linear2(x)
         x = tanh(x)
         y = self.base_linear3(x)
-        y = tanh(y)
+        y = relu(y)
         y = self.base_linear4(y)
 
         y = softmax(y) if soft_max else y

@@ -9,39 +9,25 @@ from torch import nn
 from torch.utils.data import Dataset, DataLoader, Sampler
 import torch.nn.functional as F
 
+from network_models.soundsream_models_and_utils.ss___util_class_batches_sampler import ClassBatchesSampler
+from network_models.soundsream_models_and_utils.ss_encoded_dataset import ss_encoded_dataset_full
 from network_models.w2v_emotion_model.custom_collator import DataCollatorCTCWithPadding
 from utils.eval_utils import classificationReport, confusion_matrix
 
 
-class CustomBatchSampler(object):
-    def __init__(self, targets, num_samples=1):
-        self.targets = targets
-        self.num_samples = num_samples
-        self.num_classes = len(np.unique(self.targets))
-
-    def __iter__(self):
-        for i in range(self.num_classes):
-            idxs = np.where(self.targets == i)[0]
-            np.random.shuffle(idxs)
-            num_batches = len(idxs) // self.num_samples
-            for j in range(num_batches):
-                yield idxs[j*self.num_samples:(j+1)*self.num_samples]
-
-    def __len__(self):
-        return len(self.targets) // self.num_samples
 
 
 class SSDirectDMTrainer():
     def __init__(
             self,
             model: nn.Module,
-            dataset: Dataset,
+            dataset: ss_encoded_dataset_full,
             device: str,
             num_epochs: int,
             batch_size: int,
             lr=2e-4,
             save_model_every=1000,
-            loss_fn=nn.CosineEmbeddingLoss(),
+            loss_fn=nn.CrossEntropyLoss(),
             model_path="content/customModel/soundstream/"
 
     ):
@@ -56,9 +42,10 @@ class SSDirectDMTrainer():
         self.loss_fn = loss_fn
 
     def train(self):
-        dataloader = DataLoader(self.dataset, batch_size=self.batch_size, num_workers=2, batch_sampler=BatchSamplerForDiffClasses)
+        labels = self.dataset.encoded_dataset.encodedData[self.dataset.encoded_dataset.labelcolumn].to_numpy()
+        dataloader = DataLoader(self.dataset,  num_workers=2, batch_sampler=ClassBatchesSampler(labels, num_class_samples=2))
         # optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
-        optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
+        optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr, momentum=0.9)
 
         Path(self.model_path).mkdir(parents=True, exist_ok=True)
 
@@ -73,38 +60,25 @@ class SSDirectDMTrainer():
 
         size = len(dataloader.dataset)
         for batch, (X, z) in enumerate(dataloader):
-
+            z = z.to(self.device)
             X = X.to(self.device)
             if (len(X) % 2 != 0):
                 continue
-            # X = torch.squeeze(X, dim=1)
-            # X = torch.transpose(X, 1,2)
-            # Compute prediction and loss
-            # z = z.to(self.device)
+
+
+
+            z1, z2 = torch.tensor_split(z, 2)
             pred = model(X)
+            pred1, pred2 = torch.tensor_split(pred, 2)
 
-            z = np.argmax(z, axis=1)
+            # cos_sim = torch.cosine_similarity(pred1, pred2)
+            # gt = torch.ones(7, device=self.device)
 
-            # generate dotproducts
-            # dp = torch.matmul(pred, pred.T)
-            # dp = dp  / (pred.norm(dim=-1, keepdim=True) * pred.norm(dim=-1, keepdim=True))
+            cos_sim = torch.softmax((torch.matmul(pred1, pred2.T)+1)/2, dim=1)  #/ (pred1.norm(dim=-1, keepdim=True) * pred2.norm(dim=-1, keepdim=True))
+            cos_sim_labels = torch.matmul(z1, z2.T) / (z1.norm(dim=-1, keepdim=True) * z2.norm(dim=-1, keepdim=True))
 
-            pred1, pred2 = pred.split(split_size=len(pred) // 2)
-            z1, z2 = np.array_split(z, 2)
 
-            sim = torch.cosine_similarity(pred1, pred2)
-            target = torch.tensor((np.equal(z1, z2) * 2) - 1).to(self.device)
-            loss = loss_fn(pred1, pred2, target=target)
-
-            # dp = (dp +1) /2
-            # target = torch.Tensor((np.equal.outer(z, z)*2) - 1).to(self.device)
-            target_iden = torch.tensor(np.identity(len(X))).to(self.device)
-
-            # dp = dp /torch.sum(dp, dim=1)
-            # target_sm = target /torch.sum(target, dim=1)
-            # target_iden = target_iden
-
-            # loss = 0.8 * loss_fn(dp, target) #+ 0.2 * loss_fn(dp, target_iden)
+            loss = loss_fn(cos_sim, cos_sim_labels)
 
             # Backpropagation
             optimizer.zero_grad()
@@ -117,7 +91,8 @@ class SSDirectDMTrainer():
                 print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
                 # print(dp)
 
-            if (size // self.batch_size - 1 == batch):
-                print(sim)
-                print(target)
+            if ((size //( 2*7))-2 == batch):
+                print(cos_sim)
+                print(cos_sim_labels)
+                # print(target)
                 # print(target_sm)

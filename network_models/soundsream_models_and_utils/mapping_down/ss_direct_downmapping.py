@@ -12,4 +12,4 @@ class SS_Direct_Downmapping_Model(nn.Module):
 
         x = x.flatten(1)
         x = self.linear(x)
-        return x#.norm(dim=-1, keepdim=True)
+        return x/x.norm(dim=1, keepdim=True)
