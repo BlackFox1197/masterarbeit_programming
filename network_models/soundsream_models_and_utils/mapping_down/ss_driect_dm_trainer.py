@@ -28,9 +28,11 @@ class SSDirectDMTrainer():
             lr=2e-4,
             save_model_every=1000,
             loss_fn=nn.CrossEntropyLoss(),
-            model_path="content/customModel/soundstream/"
+            model_path="content/customModel/soundstream/",
+            is_encoder= False
 
     ):
+        self.is_encoder = is_encoder
         self.model_path = model_path
         self.model = model
         self.dataset = dataset
@@ -57,7 +59,7 @@ class SSDirectDMTrainer():
             gc.collect()
 
     def train_loop(self, dataloader, model, loss_fn, optimizer):
-
+        fulllos = 0
         size = len(dataloader.dataset)
         for batch, (X, z) in enumerate(dataloader):
             z = z.to(self.device)
@@ -65,7 +67,9 @@ class SSDirectDMTrainer():
             if (len(X) % 2 != 0):
                 continue
 
-
+            if self.is_encoder:
+                X = torch.squeeze(X, dim=1)
+                X = torch.transpose(X, 1, 2)
 
             z1, z2 = torch.tensor_split(z, 2)
             pred = model(X)
@@ -74,12 +78,17 @@ class SSDirectDMTrainer():
             # cos_sim = torch.cosine_similarity(pred1, pred2)
             # gt = torch.ones(7, device=self.device)
 
-            cos_sim = torch.softmax((torch.matmul(pred1, pred2.T)+1)/2, dim=1)  #/ (pred1.norm(dim=-1, keepdim=True) * pred2.norm(dim=-1, keepdim=True))
-            cos_sim_labels = torch.matmul(z1, z2.T) / (z1.norm(dim=-1, keepdim=True) * z2.norm(dim=-1, keepdim=True))
+            dot_products = torch.matmul(pred1, pred2.T)  #/ (pred1.norm(dim=-1, keepdim=True) * pred2.norm(dim=-1, keepdim=True))
+            #cos_sim_labels = torch.tensor(np.identity(7)).to(self.device)
+            gt = torch.arange(len(pred1), dtype=torch.long).to(self.device)
+
+            b1_to_b2_sim = torch.softmax(dot_products, dim=1)
+            b2_to_b1_sim = torch.softmax(dot_products.t(), dim=1)
 
 
-            loss = loss_fn(cos_sim, cos_sim_labels)
+            loss = (loss_fn(b1_to_b2_sim, gt) + loss_fn(b2_to_b1_sim, gt))*0.5
 
+            fulllos += loss.item()
             # Backpropagation
             optimizer.zero_grad()
             loss.backward()
@@ -91,8 +100,11 @@ class SSDirectDMTrainer():
                 print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
                 # print(dp)
 
-            if ((size //( 2*7))-2 == batch):
-                print(cos_sim)
-                print(cos_sim_labels)
+            #if ((size //( 2*7))-2 == batch):
+                # print(b1_to_b2_sim)
+                # print(b2_to_b1_sim)
+                #print(cos_sim_labels)
                 # print(target)
                 # print(target_sm)
+
+        print(fulllos)
