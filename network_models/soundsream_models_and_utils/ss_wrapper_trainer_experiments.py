@@ -16,8 +16,9 @@ class ExperimentsTrainer:
     def __init__(self, dataset: ss_encoded_dataset_full, models_dir = "content/soundstream/experiments/",
                  trials_per_model_type: int = 1, epochs_per_model = 1000, start_lr = 1e-4, lr_quotient = 2,
                  batch_size =8, device = "cuda" if torch.cuda.is_available() else "cpu",
-                 save_model_every = 50, save_highest_acc_min_acc=0.6, seed = 200):
+                 save_model_every = 50, save_highest_acc_min_acc=0.6, seed = 200, regularize_dims = False):
 
+        self.regularize_dims = regularize_dims
         self.seed = seed
         self.dataset =dataset
         self.save_highest_acc_min_acc =save_highest_acc_min_acc
@@ -79,7 +80,7 @@ class ExperimentsTrainer:
                                     batch_size=self.batch_size if bs is None else bs,
                                     save_model_every=self.safe_model_every,
                                     save_highest_acc_min_acc=self.save_highest_acc_min_acc,
-                                    model_path = save_dir)
+                                    model_path = save_dir, regularize_dims=self.regularize_dims)
         return trainer.train()
     
     
