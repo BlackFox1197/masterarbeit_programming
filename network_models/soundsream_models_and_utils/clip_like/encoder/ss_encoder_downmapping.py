@@ -1,5 +1,5 @@
 from torch import nn
-from network_models.soundsream_models_and_utils.encoder.transformer import Encoder
+from network_models.soundsream_models_and_utils.clip_like.encoder.transformer import Encoder
 
 class EncoderDownmapping(nn.Module):
     def __init__(self, embed_dim,  n_heads, ff_dim, n_layers, output, dropout = 0.1, max_seq_len=100):
