@@ -6,6 +6,7 @@ import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
 
+from network_models.soundsream_models_and_utils.ss___util_class_batches_sampler import ClassBatchesSampler
 from network_models.w2v_emotion_model.custom_collator import DataCollatorCTCWithPadding
 from utils.eval_utils import classificationReport, confusion_matrix
 
@@ -24,9 +25,11 @@ class SSGenModelTrainer():
             save_model_every=1000,
             save_highest_acc_min_acc: float | None = 0.7,
             loss_fn=nn.CrossEntropyLoss(),
-            model_path = "content/customModel/soundstream/"
+            model_path = "content/customModel/soundstream/",
+            regularize_dims = False
 
     ):
+        self.regularize_dims = regularize_dims
         self.model_path = model_path
         self.model = model
         self.train_dataset = train_dataset
@@ -42,14 +45,21 @@ class SSGenModelTrainer():
         self.loss_fn = loss_fn
         self.labelList = labelList
 
+    num_class_samples = 2
 
 
 
     def train(self):
-        train_dataloader = DataLoader(self.train_dataset, shuffle=True, batch_size=self.batch_size, num_workers=2)
-        test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=2)
+        if(self.regularize_dims):
+            labels =(self.train_dataset.dataset.encoded_dataset.encodedData[self.train_dataset.dataset.encoded_dataset.labelcolumn].to_numpy())[self.train_dataset.indices]
+            labels_test = (self.test_dataset.dataset.encoded_dataset.encodedData[self.test_dataset.dataset.encoded_dataset.labelcolumn].to_numpy())[self.test_dataset.indices]
+            train_dataloader = DataLoader(self.train_dataset,  num_workers=2, batch_sampler=ClassBatchesSampler(labels, num_class_samples=2))
+            test_dataloader = DataLoader(self.test_dataset,  num_workers=2, batch_sampler=ClassBatchesSampler(labels_test, num_class_samples=2))
+        else:
+            train_dataloader = DataLoader(self.train_dataset, shuffle=True, batch_size=self.batch_size, num_workers=2)
+            test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=2)
         #optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
-        optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
+        optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr, momentum=0.9)
 
         Path(self.model_path).mkdir(parents=True, exist_ok=True)
         highest_acc = 0
@@ -61,7 +71,10 @@ class SSGenModelTrainer():
             if(t % self.save_model_every == 0):
                 torch.save(self.model.state_dict(), self.model_path + f"emo_reco_{t}.pth")
             print(f"Epoch {t + 1}\n-------------------------------")
-            self.train_loop(train_dataloader, self.model, self.loss_fn, optimizer)
+            # this is the trainloop
+            self.train_loop(train_dataloader, self.model, self.loss_fn, optimizer, t)
+
+            # --------------------- testloop and evaluation- ---------------
             acc, true, preds = self.test_loop(test_dataloader, self.model, self.loss_fn)
 
             if(acc > highest_acc):
@@ -79,16 +92,26 @@ class SSGenModelTrainer():
 
 
 
-    def train_loop(self, dataloader, model, loss_fn, optimizer):
+    def train_loop(self, dataloader, model, loss_fn, optimizer, epoch):
         size = len(dataloader.dataset)
         for batch, (X, z) in enumerate(dataloader):
 
+            if (len(X) % 2 != 0):
+                continue
             X = X.to(self.device)
             # Compute prediction and loss
             z = z.to(self.device)
-            pred = model(X)
 
-            loss = loss_fn(pred, z)
+            if(self.regularize_dims):
+                pred_dims, pred = model(X, return_with_dims = True)
+                cosine_loss = self.calculate_cosine_loss(pred_dims, loss_fn)
+                classification_loss = loss_fn(pred, torch.argmax(z, dim=1))
+                #loss = classification_loss*(max(0.7-(epoch*self.lr/2), 0.4)) + cosine_loss*(min(0.3+(epoch*self.lr/2),0.6))
+                loss = classification_loss*0.8 + cosine_loss*0.2
+
+            else:
+                pred = model(X)
+                loss = loss_fn(pred, z)
 
             # Backpropagation
             optimizer.zero_grad()
@@ -97,35 +120,72 @@ class SSGenModelTrainer():
 
             if batch % 100 == 0:
                 loss, current = loss.item(), batch * len(X)
-                print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+                #print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+                if (self.regularize_dims):
+                    print(f"[{current:>5d}/{size:>5d}] total-loss: {loss:>7f}; classification loss: {classification_loss:>8f};  cosine similarity loss: {cosine_loss:>8f}")
+                else:
+                    print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
             #gc.collect()
 
 
+    def calculate_cosine_loss(self, pred_dims, loss_fn):
+        pred1, pred2 = torch.tensor_split(pred_dims, 2)
+        pred1, pred2 = pred1/pred1.norm(dim=1, keepdim=True), pred2/pred2.norm(dim=1, keepdim=True)
+
+
+        dot_products = torch.matmul(pred1, pred2.T)  # / (pred1.norm(dim=-1, keepdim=True) * pred2.norm(dim=-1, keepdim=True))
+        gt = torch.arange(len(pred1), dtype=torch.long).to(self.device)
+
+        b1_to_b2_sim = torch.softmax(dot_products, dim=1)
+        b2_to_b1_sim = torch.softmax(dot_products.t(), dim=1)
+
+        return (loss_fn(b1_to_b2_sim, gt) + loss_fn(b2_to_b1_sim, gt))*0.5
+
     def test_loop(self, dataloader, model, loss_fn): #TODO: Add more than accuracy (recall, precision)
         size = len(dataloader.dataset)
-        num_batches = len(dataloader)
-        test_loss, correct = 0, 0
+        size_reg = len(dataloader)
+        test_loss, correct, cosine_loss_full, classification_loss_full = 0, 0,0,0
         true, preds = [], []
+        batches = 0
 
         with torch.no_grad():
             for X, labels in dataloader:
                 X = X.to(self.device)
                 labels = labels.to(self.device)
-                pred = model(X, eval_mode = True)
+
+                if (self.regularize_dims):
+                    pred_dims, pred = model(X, return_with_dims=True, eval_mode = True)
+                    cosine_loss = self.calculate_cosine_loss(pred_dims, loss_fn)
+                    classification_loss = loss_fn(pred, labels)
+                    loss = classification_loss * 0.7 + cosine_loss * 0.3
+
+                else:
+                    pred = model(X, eval_mode = True)
+                    loss = loss_fn(pred, labels)
 
                 true = true + [torch.squeeze(a.nonzero()).item() for a in labels]
                 preds = preds + pred.argmax(1).cpu().numpy().tolist()
-                test_loss += loss_fn(pred, labels.to(self.device)).item()
+                test_loss += loss.item()
+                cosine_loss_full += cosine_loss.item()
+                classification_loss_full += classification_loss.item()
                 labels = torch.tensor([a.nonzero() for a in labels]).to(self.device)
                 correct += (pred.argmax(1) == labels).type(torch.float).sum().item()
+                batches += 1
 
         if(self.labelList is not None):
             classificationReport(true, preds, self.labelList)
 
 
-        test_loss /= num_batches
-        correct /= size
+        test_loss /= batches
+        cosine_loss_full /=batches
+        classification_loss_full /=batches
+        if(self.regularize_dims):
+            correct /= (size_reg//len(self.labelList*self.num_class_samples))*(len(self.labelList*self.num_class_samples))
+        else:
+            correct /= size
         print(f"Test Error: \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+        if(self.regularize_dims):
+            print(f"classification loss: {classification_loss_full:>8f};  cosine similarity loss: {cosine_loss_full:>8f} \n")
         return correct, true, preds
 
 
@@ -161,7 +221,7 @@ class SSGenModelTrainer():
         save_str = "#" + modelName + "\n"
         save_str += "## Evaluations: \n"
         save_str += "```"+classificationReport(true_codes=ground_truth, pred_codes=pred,sortedLabelStrings=labelList, printReport=False, return_string=True) +"```\n \n"
-        save_str += "```"+confusion_matrix(true_codes=ground_truth, pred_codes=pred,sortedLabelStrings=labelList, printReport=False) + "```\n"
+        save_str += "```\n"+confusion_matrix(true_codes=ground_truth, pred_codes=pred,sortedLabelStrings=labelList, printReport=False) + "```\n"
         save_str += f"Max Accuracy: {acc} in epoch {epoch}"
 
         file = open(filename+".md", "w")

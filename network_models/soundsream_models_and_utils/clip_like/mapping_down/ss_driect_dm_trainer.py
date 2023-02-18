@@ -70,6 +70,7 @@ class SSDirectDMTrainer():
             if self.is_encoder:
                 X = torch.squeeze(X, dim=1)
                 X = torch.transpose(X, 1, 2)
+                X = X/X.norm(dim=1, keepdim=True)
 
             z1, z2 = torch.tensor_split(z, 2)
             pred = model(X)
@@ -100,9 +101,9 @@ class SSDirectDMTrainer():
                 print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
                 # print(dp)
 
-            #if ((size //( 2*7))-2 == batch):
-                # print(b1_to_b2_sim)
-                # print(b2_to_b1_sim)
+            # if ((size //( 2*7))-2 == batch):
+            #     print(b1_to_b2_sim)
+            #     print(b2_to_b1_sim)
                 #print(cos_sim_labels)
                 # print(target)
                 # print(target_sm)

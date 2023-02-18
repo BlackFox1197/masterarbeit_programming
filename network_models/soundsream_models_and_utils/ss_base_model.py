@@ -3,7 +3,7 @@ import torch.nn.functional as F
 from torch import nn
 
 
-class SSBaseModel(nn.Module):
+class   SSBaseModel(nn.Module):
     def __init__(self, num_emotions=7):  # 175 is equivalent to 3,5 seconds with a sampling-rate of 16000
         super().__init__()
 

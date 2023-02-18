@@ -16,8 +16,9 @@ class ExperimentsTrainer:
     def __init__(self, dataset: ss_encoded_dataset_full, models_dir = "content/soundstream/experiments/",
                  trials_per_model_type: int = 1, epochs_per_model = 1000, start_lr = 1e-4, lr_quotient = 2,
                  batch_size =8, device = "cuda" if torch.cuda.is_available() else "cpu",
-                 save_model_every = 50, save_highest_acc_min_acc=0.6):
+                 save_model_every = 50, save_highest_acc_min_acc=0.6, seed = 200):
 
+        self.seed = seed
         self.dataset =dataset
         self.save_highest_acc_min_acc =save_highest_acc_min_acc
         self.models_dir =models_dir
@@ -49,12 +50,14 @@ class ExperimentsTrainer:
 
     def run_conv_model_test(self, lr, epochs, current_run):
         x_size, y_size = self.dataset[0][0][0].shape
+        torch.manual_seed(self.seed)
         model = SSConvModel3Sec(num_emotions=len(self.label_list), xSize=x_size, ySize=y_size).to(self.device)
         save_dir = self.models_dir + f"/Run_Nr_{current_run}/conv/"
         return self.run_model_test(lr, epochs, model, save_dir)
 
     def run_dim_red_model_test(self, lr, epochs, current_run):
         bs = self.batch_size * 2
+        torch.manual_seed(self.seed)
         model = SSDimRedModel(num_emotions=len(self.label_list)).to(self.device)
         save_dir = self.models_dir + f"/Run_Nr_{current_run}/dimred/"
         return self.run_model_test(lr, epochs, model, save_dir, bs=bs)
@@ -62,6 +65,7 @@ class ExperimentsTrainer:
     def run_flat_model_test(self, lr, epochs, current_run):
         #bs = max(self.batch_size // 2, 1)
         bs = self.batch_size
+        torch.manual_seed(self.seed)
         model = SSFlatModel(num_emotions=len(self.label_list)).to(self.device)
         save_dir = self.models_dir + f"/Run_Nr_{current_run}/flat/"
         return self.run_model_test(lr, epochs, model, save_dir, bs=bs)

@@ -4,7 +4,7 @@ import sklearn.metrics
 from numba import float64
 
 
-def classificationReport(true_codes, pred_codes, sortedLabelStrings, printReport = True, return_string = True):
+def classificationReport(true_codes, pred_codes, sortedLabelStrings, printReport = True, return_string = True, return_acucracy = False):
     assert len(true_codes) == len(pred_codes)
     length = len(sortedLabelStrings)
     ground_true_occurances = np.array([np.count_nonzero(np.array(true_codes) == i) for i in range(len(sortedLabelStrings))])
@@ -36,10 +36,14 @@ def classificationReport(true_codes, pred_codes, sortedLabelStrings, printReport
     if(printReport):
         print(string)
 
+    if(return_acucracy):
+        return  accuracy
+
     if(return_string):
         return string
 
     return tp, tn, fp, fn
+
 
 
 def confusion_matrix(true_codes, pred_codes, sortedLabelStrings, printReport = True):
