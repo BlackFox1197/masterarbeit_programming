@@ -104,7 +104,7 @@ def loadTess(directory_tess):
     return paths, emotions
 
 
-def collateToSeconds(seconds, samplingRate, const_value=0, asCallable=True, data=[]):
+def collateToSeconds(seconds, samplingRate, const_value=0, asCallable=True, data=[], circular_padding = False):
     def collator(dataInner):
         tarLength = floor(seconds * samplingRate)
         currLen = len(dataInner)
@@ -113,6 +113,8 @@ def collateToSeconds(seconds, samplingRate, const_value=0, asCallable=True, data
 
         if (currLen < tarLength):
             paddboth = int((tarLength - currLen) / 2)
+            if(circular_padding):
+                return torch.tensor(np.pad(dataInner, (paddboth, paddboth + parr), mode="wrap"))
             return nn.functional.pad(dataInner, (paddboth, paddboth + parr), value=const_value)
         else:
             cut = int((currLen - tarLength) / 2)
