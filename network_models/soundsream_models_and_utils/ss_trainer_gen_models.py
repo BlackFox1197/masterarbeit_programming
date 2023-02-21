@@ -59,8 +59,8 @@ class SSGenModelTrainer():
             train_dataloader = DataLoader(self.train_dataset, shuffle=True, batch_size=self.batch_size, num_workers=2)
             test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=2)
         #optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
-        ptimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr, betas=(0.9, 0.999), eps=1e-08, weight_decay=0)
-        optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr, momentum=0.9)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr, betas=(0.9, 0.999), eps=1e-08, weight_decay=0)
+        #optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr, momentum=0.9)
 
         Path(self.model_path).mkdir(parents=True, exist_ok=True)
         highest_acc = 0
@@ -167,8 +167,9 @@ class SSGenModelTrainer():
                 true = true + [torch.squeeze(a.nonzero()).item() for a in labels]
                 preds = preds + pred.argmax(1).cpu().numpy().tolist()
                 test_loss += loss.item()
-                cosine_loss_full += cosine_loss.item()
-                classification_loss_full += classification_loss.item()
+                if(self.regularize_dims):
+                    cosine_loss_full += cosine_loss.item()
+                    classification_loss_full += classification_loss.item()
                 labels = torch.tensor([a.nonzero() for a in labels]).to(self.device)
                 correct += (pred.argmax(1) == labels).type(torch.float).sum().item()
                 batches += 1
