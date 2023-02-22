@@ -18,6 +18,7 @@ dataset = ssed.ss_encoded_dataset_full(
     #sound_stream_path="/home/ckwdani/Programming/Projects/masterarbeit/Jupyter/mainProject/notebooks/content/soundstream/vers0.7.4/01_Soundstream_7_x_new_libri_full/currentSelection/soundstream.72500.pt")
     sound_stream_path="/home/ckwdani/Programming/Projects/masterarbeit/Jupyter/mainProject/notebooks/content/soundstream/verision0.12.1/30_10000_1e-4_bs6_gae8_dml320-32---MUSIC-Emotion/soundstream.6000.pt",
     clip_path="/home/ckwdani/Programming/Projects/masterarbeit/Jupyter/mainProject/notebooks/content/soundstream/experiments/AUTO_encoder/Nr1/1500_moreencoder_0.pth", # trained for 1000 epochs
-    encoder=True
+    encoder=True,
+    circular=True
 )
 dataset.saveEncoding("../notebooks/content/data/allEncodings_encoder.pkl")
