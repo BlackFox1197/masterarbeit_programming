@@ -35,6 +35,8 @@ def loadMesd(directory_mesd) -> Tuple:
         'Sadness': "sad"
     }
 
+
+
     def lamb(filename):
         label = filename.split('_')[0]
         label = mesdDict[label]
@@ -65,6 +67,25 @@ def loadCafe(directory_cafe) -> Tuple:
     paths, emotions = crawl(lamb, directory_cafe)
     return paths, emotions
 
+
+def loadInduced(directory_induced) -> Tuple:
+    induced_dict = {
+        'angry': "angry",
+        'disgusted': "disgust",
+        'happy': "happy",
+        'neutral': "neutral",
+        'fearful': "fear",
+        'surprised': "surprise",
+        'sad': "sad"
+    }
+
+    def lamb(filename):
+        label = filename.split('_')[0]
+        label = induced_dict[label]
+        return label
+
+    paths, emotions = crawl(lamb, directory_induced)
+    return paths, emotions
 
 # https://zenodo.org/record/1188976
 def loadRavdess(directory_ravdess) -> Tuple:
@@ -113,7 +134,7 @@ def collateToSeconds(seconds, samplingRate, const_value=0, asCallable=True, data
 
         if (currLen < tarLength):
             paddboth = int((tarLength - currLen) / 2)
-            if(circular_padding):
+            if(circular_padding and False):
                 return torch.tensor(np.pad(dataInner.cpu(), (paddboth, paddboth + parr), mode="wrap")).to(device)
             return nn.functional.pad(dataInner, (paddboth, paddboth + parr), value=const_value)
         else:
@@ -133,10 +154,11 @@ class CombinedEmoDataSet_7_emos(Dataset):
     labelcolumn = "emotion"
 
     def     __init__(self, directory_tess: None | str = None, directory_ravdess: None | str = None,
-                 directory_cafe: None | str = None, directory_mesd: None | str = None,
+                 directory_cafe: None | str = None, directory_mesd: None | str = None, directory_induced: None | str = None,
                  transFormAudio: callable = lambda x: x, device="cuda", filter_emotions: None | List[str] = None):
         self.device = device
 
+        self.directory_induced = directory_induced
         self.directory_tess = directory_tess
         self.directory_mesd = directory_mesd
         self.directory_ravdess = directory_ravdess
@@ -154,6 +176,7 @@ class CombinedEmoDataSet_7_emos(Dataset):
 
     def __getitem__(self, idx):
         audio = torchaudio.load(self.dataFrame.iloc[idx][self.inputcolumn])[0].to(self.device)
+        #audio = torchaudio.load(self.dataFrame.iloc[idx][self.inputcolumn])[0]
         audio = torch.unsqueeze(self.transFormAudio(audio[0]), dim=0)
         label = self.dataFrame.iloc[idx][self.labelcolumn]
         return audio, label
@@ -161,12 +184,13 @@ class CombinedEmoDataSet_7_emos(Dataset):
 
     def load_custom_dataset(self) -> pd.DataFrame:
         tess_paths, tess_emo = self.loadTess() if self.directory_tess is not None else ([], [])
+        incuced_paths, incuced_emo = self.loadInduced() if self.directory_induced is not None else ([], [])
         mesd_paths, mesd_emo = self.loadMesd() if self.directory_mesd is not None else ([], [])
         ravdess_paths, ravdess_emo = self.loadRavdess() if self.directory_ravdess is not None else ([], [])
         cafe_paths, cafe_emo = self.loadCafe() if self.directory_cafe is not None else ([], [])
 
-        paths = mesd_paths + tess_paths + cafe_paths + ravdess_paths
-        emotions = mesd_emo + tess_emo + cafe_emo + ravdess_emo
+        paths = mesd_paths + tess_paths + cafe_paths + ravdess_paths + incuced_paths
+        emotions = mesd_emo + tess_emo + cafe_emo + ravdess_emo + incuced_emo
 
         df = pd.DataFrame()
         df[self.inputcolumn] = paths
@@ -179,6 +203,9 @@ class CombinedEmoDataSet_7_emos(Dataset):
 
     def loadMesd(self) -> Tuple:
         return loadMesd(self.directory_mesd)
+
+    def loadInduced(self) -> Tuple:
+        return loadInduced(self.directory_induced)
 
     def loadCafe(self) -> Tuple:
         return loadCafe(self.directory_cafe)
@@ -215,6 +242,9 @@ class DatasetGeneric(Dataset):
         label = self.dataFrame.iloc[idx][self.labelcolumn]
         return audio, label
 
+    def getDir(self, idx):
+        label = self.dataFrame.iloc[idx][self.labelcolumn]
+        return self.dataFrame.iloc[idx][self.inputcolumn], label
     def load_custom_dataset(self) -> pd.DataFrame:
         paths, emotions = self.loadDataset(self.directory)
 

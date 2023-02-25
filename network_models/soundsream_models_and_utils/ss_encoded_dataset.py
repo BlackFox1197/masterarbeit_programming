@@ -19,7 +19,7 @@ class ss_encoded_dataset_full(Dataset):
     """ This dataset loads an audio dataset and encodes it with soundstream"""
     def __init__(self, sound_stream_path: None | str = None,
                  directory_tess: None | str = None, directory_ravdess: None | str = None,
-                 directory_cafe: None | str = None, directory_mesd: None | str = None,
+                 directory_cafe: None | str = None, directory_mesd: None | str = None, directory_induced: None | str = None,
                  seconds = 3.5, sr=16000, device="cpu", one_hot_encoded = True, csvPath: str | None = None, clip_path: str | None = None, encoder =False, circular=False):
         assert not (sound_stream_path is None and csvPath is None)
         super().__init__()
@@ -41,7 +41,7 @@ class ss_encoded_dataset_full(Dataset):
 
 
         paths_dataset = CombinedEmoDataSet_7_emos(
-            directory_tess=directory_tess, directory_cafe=directory_cafe, directory_ravdess=directory_ravdess,
+            directory_tess=directory_tess, directory_cafe=directory_cafe, directory_ravdess=directory_ravdess, directory_induced = directory_induced,
             directory_mesd=directory_mesd, device=device, transFormAudio=collateToSeconds(seconds, sr, const_value=0, circular_padding=circular, device=device))
         num_labels = len(paths_dataset.label_list)
 
