@@ -1,4 +1,5 @@
 /notebooks/content/
+/notebooks_clip/content/
 /notebooks/results3/
 /notebooks/cache/
 /network_models/soundstream_lstm/__pycache__/

@@ -3,12 +3,12 @@ import gc
 import numpy as np
 import pandas as pd
 import torch
+import umap
 from audiolm_pytorch import SoundStream
 from torch.utils.data import Dataset
-from torchvision.transforms import Lambda
 
-from network_models.soundsream_models_and_utils.clip_like.encoder.ss_bottleneck_encoder import SSBottelneckLayer
-from network_models.soundsream_models_and_utils.clip_like.encoder.ss_encoder_downmapping import EncoderDownmapping
+from network_models.clip.models.ss_encoder_downmapping import EncoderDownmapping
+from network_models.soundsream_models_and_utils.clip_like.encoder.DEPR_ss_bottleneck_encoder import SSBottelneckLayer
 from network_models.soundsream_models_and_utils.clip_like.mapping_down.ss_direct_downmapping import \
     SS_Direct_Downmapping_Model
 from network_models.soundstream_lstm.CombinedEmoDataset_7_Emo import DatasetGeneric, CombinedEmoDataSet_7_emos, \
@@ -20,7 +20,7 @@ class ss_encoded_dataset_full(Dataset):
     def __init__(self, sound_stream_path: None | str = None,
                  directory_tess: None | str = None, directory_ravdess: None | str = None,
                  directory_cafe: None | str = None, directory_mesd: None | str = None, directory_induced: None | str = None,
-                 seconds = 3.5, sr=16000, device="cpu", one_hot_encoded = True, csvPath: str | None = None, clip_path: str | None = None, encoder =False, circular=False):
+                 seconds = 3.5, sr=16000, device="cpu", one_hot_encoded = True, csvPath: str | None = None, clip_path: str | None = None, encoder =False, circular=False, umap = False):
         assert not (sound_stream_path is None and csvPath is None)
         super().__init__()
         self.device = device
@@ -46,7 +46,7 @@ class ss_encoded_dataset_full(Dataset):
         num_labels = len(paths_dataset.label_list)
 
         self.encoded_dataset = ss_encoded_dataset(data_set=paths_dataset, sound_stream=soundstream, device=device,
-                                                  num_labels=num_labels, one_hot_encoded=one_hot_encoded, csvPath=csvPath, clip=clip, encoder=encoder)
+                                                  num_labels=num_labels, one_hot_encoded=one_hot_encoded, csvPath=csvPath, clip=clip, encoder=encoder, umap=umap)
 
 
     def __getitem__(self, index):
@@ -88,13 +88,16 @@ class ss_encoded_dataset(Dataset):
     """ This dataset encodes an audio dataset with soundsream"""
     inputcolumn = "encoded"
     labelcolumn = "emotionCode"
+    pcacolumn = "pca"
     clear_label_colums = "clear_emotion"
 
     # save_encode_column = "encode_col"
     # save_dataset_column = "ds_col"
 
     def __init__(self, data_set: CombinedEmoDataSet_7_emos | DatasetGeneric,  clip: EncoderDownmapping | SS_Direct_Downmapping_Model | None,  sound_stream: SoundStream | None, num_labels = 7,
-                 one_hot_encoded = True, device = "cpu", csvPath: str | None = None, encoder = False):
+                 one_hot_encoded = True, device = "cpu", csvPath: str | None = None, encoder = False, umap = False):
+
+        self.umap = umap
         self.encoder = encoder
         self.clip = clip
         assert not (sound_stream is None and csvPath is None)
@@ -116,6 +119,8 @@ class ss_encoded_dataset(Dataset):
         self.target_transform = self.indices_to_one_hot
 
     def __getitem__(self, index):
+        if(self.umap):
+            return self.encodedData.iloc[index][self.pcacolumn], self.target_transform(self.encodedData.iloc[index][self.labelcolumn])[0]
         return self.encodedData.iloc[index][self.inputcolumn], self.target_transform(self.encodedData.iloc[index][self.labelcolumn])[0]
 
 
@@ -196,6 +201,16 @@ class ss_encoded_dataset(Dataset):
             gc.collect()
             df = df.append(dfInter)
         gc.collect()
+
+
+        if self.umap:
+            pca = umap.UMAP(n_components=4, n_neighbors=len(df)-1)
+            lst = [tens.numpy() for tens in df[self.inputcolumn]]
+            out = pca.fit(np.asarray(lst))
+            pcaOut = np.asarray([i for i in out.embedding_])
+            pcaOut = 2 * (pcaOut - pcaOut.min(axis=0)) / (pcaOut.max(axis=0) - pcaOut.min(axis=0)) - 1
+            # df["pca"]=[i for i in out.embedding_]
+            df[self.pcacolumn] = [torch.tensor(dims) for dims in pcaOut]
 
         #df[self.labelcolumn] = emotions
         return df
