@@ -5,6 +5,7 @@ import pandas as pd
 import torch
 import umap
 from audiolm_pytorch import SoundStream
+from sklearn.neighbors import KDTree
 from torch.utils.data import Dataset
 
 from network_models.clip.models.ss_encoder_downmapping import EncoderDownmapping
@@ -55,6 +56,17 @@ class ss_encoded_dataset_full(Dataset):
     def saveEncoding(self, path):
         self.encoded_dataset.saveEncoding(path)
 
+
+    def getNextNeighbour(self, vector, emotion=None, included_datasets  = None):
+        if included_datasets is None:
+            included_datasets = [CombinedEmoDataSet_7_emos.cafeString, CombinedEmoDataSet_7_emos.tessString, CombinedEmoDataSet_7_emos.mesdString, CombinedEmoDataSet_7_emos.ravedessString]
+        filterDatasets = self.encoded_dataset.encodedData.loc[self.encoded_dataset.encodedData[self.encoded_dataset.dataset_column].isin(included_datasets)]
+        if emotion is not None:
+            filterDatasets = filterDatasets.loc[filterDatasets[self.encoded_dataset.clear_label_colums].isin([emotion])]
+        npds = np.asarray([fp.numpy() for fp in filterDatasets["pca"]])
+        kdt = KDTree(npds, metric='euclidean')
+        cv = kdt.query(np.atleast_2d(vector), k=1, return_distance=False)[0, 0]
+        return filterDatasets.iloc[cv]
 
     def one_hot_to_id(self, x):
         pass
