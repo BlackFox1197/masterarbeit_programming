@@ -152,10 +152,19 @@ def collateToSeconds(seconds, samplingRate, const_value=0, asCallable=True, data
 class CombinedEmoDataSet_7_emos(Dataset):
     inputcolumn = "path"
     labelcolumn = "emotion"
+    datasetcolumn = "dataset"
+
+    mesdString = "mesd"
+    tessString = "tess"
+    cafeString = "cafe"
+    ravedessString = "ravedess"
+    inducedString = "induced"
 
     def     __init__(self, directory_tess: None | str = None, directory_ravdess: None | str = None,
                  directory_cafe: None | str = None, directory_mesd: None | str = None, directory_induced: None | str = None,
-                 transFormAudio: callable = lambda x: x, device="cuda", filter_emotions: None | List[str] = None):
+                 transFormAudio: callable = lambda x: x, device="cuda", filter_emotions: None | List[str] = None,
+                 with_dataset = False):
+        self.withDataset = with_dataset
         self.device = device
 
         self.directory_induced = directory_induced
@@ -179,6 +188,8 @@ class CombinedEmoDataSet_7_emos(Dataset):
         #audio = torchaudio.load(self.dataFrame.iloc[idx][self.inputcolumn])[0]
         audio = torch.unsqueeze(self.transFormAudio(audio[0]), dim=0)
         label = self.dataFrame.iloc[idx][self.labelcolumn]
+        if self.withDataset:
+            return audio, label, self.dataFrame.iloc[idx][self.datasetcolumn]
         return audio, label
 
 
@@ -191,10 +202,14 @@ class CombinedEmoDataSet_7_emos(Dataset):
 
         paths = mesd_paths + tess_paths + cafe_paths + ravdess_paths + incuced_paths
         emotions = mesd_emo + tess_emo + cafe_emo + ravdess_emo + incuced_emo
+        dataset = [self.mesdString] * len(mesd_emo) + [self.tessString] * len(tess_emo) + \
+                  [self.cafeString] * len(cafe_emo) + [self.ravedessString] * len(ravdess_emo) + \
+                  [self.inducedString] * len(incuced_emo)
 
         df = pd.DataFrame()
         df[self.inputcolumn] = paths
         df[self.labelcolumn] = emotions
+        df[self.datasetcolumn] = dataset
 
         if self.filter_emotions is not None:
             df = df[~df[self.labelcolumn].isin(self.filter_emotions)]

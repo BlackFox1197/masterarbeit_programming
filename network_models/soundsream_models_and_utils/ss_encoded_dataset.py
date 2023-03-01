@@ -88,6 +88,7 @@ class ss_encoded_dataset(Dataset):
     """ This dataset encodes an audio dataset with soundsream"""
     inputcolumn = "encoded"
     labelcolumn = "emotionCode"
+    dataset_column = "dataset"
     pcacolumn = "pca"
     clear_label_colums = "clear_emotion"
 
@@ -149,6 +150,7 @@ class ss_encoded_dataset(Dataset):
     def emoToId(self, emotion: str):
         return np.where(self.dataSet.label_list == emotion)[0]
 
+
     def getEmotionFromId(self, id: int):
         return self.dataSet.label_list[id]
 
@@ -156,6 +158,7 @@ class ss_encoded_dataset(Dataset):
         tensors = []
         emotions = []
         emotions_names = []
+        dataset_names = []
         i = 0
         for sample in iter(self.dataSet):
             i += 1
@@ -170,6 +173,7 @@ class ss_encoded_dataset(Dataset):
                     else:
                         data = self.clip(torch.transpose(torch.squeeze(data[0], dim=1), 1, 2))
 
+            dataset_names.append(sample[2])
             tensors.append(data[0].detach().cpu())
             emotions.append(self.emoToId(sample[1]))
             emotions_names.append(sample[1])
@@ -182,12 +186,14 @@ class ss_encoded_dataset(Dataset):
         end = len(tensors)%itersize
 
         df[self.inputcolumn] = tensors[0:itersize]
+        df[self.dataset_column] = dataset_names[0:itersize]
         df[self.labelcolumn] = emotions[0:itersize]
         df[self.clear_label_colums] = emotions_names[0:itersize]
         for i in range(parts - 1):
             dfInter = pd.DataFrame()
             dfInter[self.inputcolumn] = tensors[(i+1)*itersize:(i+2)*itersize]
             dfInter[self.labelcolumn] = emotions[(i+1)*itersize:(i+2)*itersize]
+            dfInter[self.dataset_column] = dataset_names[(i+1)*itersize:(i+2)*itersize]
             dfInter[self.clear_label_colums] = emotions_names[(i+1)*itersize:(i+2)*itersize]
             gc.collect()
             df = df.append(dfInter)
@@ -196,6 +202,7 @@ class ss_encoded_dataset(Dataset):
         gc.collect()
         if itersize < len(tensors) and end != 0:
             dfInter[self.inputcolumn] = tensors[(parts*itersize):(parts*itersize+end)]
+            dfInter[self.dataset_column] = dataset_names[(parts*itersize):(parts*itersize+end)]
             dfInter[self.labelcolumn] = emotions[(parts*itersize):(parts*itersize+end)]
             dfInter[self.clear_label_colums] = emotions_names[(parts*itersize):(parts*itersize+end)]
             gc.collect()
@@ -214,3 +221,10 @@ class ss_encoded_dataset(Dataset):
 
         #df[self.labelcolumn] = emotions
         return df
+
+
+
+def loadDatasetAndAddColumns(datasetPath: str, sevenEmoDs: CombinedEmoDataSet_7_emos):
+    data_set = ss_encoded_dataset_full(csvPath=datasetPath)
+    data_set.encoded_dataset.encodedData[data_set.encoded_dataset.dataset_column] = sevenEmoDs.dataFrame[sevenEmoDs.datasetcolumn]
+    data_set.encoded_dataset.encodedData.to_pickle(datasetPath)

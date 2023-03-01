@@ -17,9 +17,10 @@ dataset = ssed.ss_encoded_dataset_full(
     device="cuda",
     #sound_stream_path="../notebooks/content/soundstream/vers0.7.4/01_Soundstream_7_x_new_libri_full/5_3250/soundstream.3250.pt")
     #sound_stream_path="/home/ckwdani/Programming/Projects/masterarbeit/Jupyter/mainProject/notebooks/content/soundstream/vers0.7.4/01_Soundstream_7_x_new_libri_full/currentSelection/soundstream.72500.pt")
-    sound_stream_path="/home/ckwdani/Programming/Projects/masterarbeit/Jupyter/mainProject/notebooks/content/soundstream/verision0.12.1/10_10000_1e-4_bs6_gae8_dml320-32/soundstream.8000.pt",
+    sound_stream_path="/home/ckwdani/Programming/Projects/masterarbeit/Jupyter/mainProject/notebooks_clip/content/models/soundstream_model/soundstream.44000.pt",
     #clip_path="/home/ckwdani/Programming/Projects/masterarbeit/Jupyter/mainProject/notebooks/content/encoder/clip_full_datastet/encoder_600.pth" # trained for 1500 epochs
-    clip_path="/home/ckwdani/Programming/Projects/masterarbeit/Jupyter/mainProject/notebooks/content/encoder/clip_full_datastet/encoder_600.pth",
+    clip_path="/home/ckwdani/Programming/Projects/masterarbeit/Jupyter/mainProject/notebooks_clip/content/models/clip_models/clip_full_dataset_5_sec_encoder_200.pth",
+    seconds=5.0,
     umap=True
 )
-dataset.saveEncoding("../notebooks/content/data/encoder_datasets/full_encodings_with_umap.pkl")
+dataset.saveEncoding("/home/ckwdani/Programming/Projects/masterarbeit/Jupyter/mainProject/notebooks_clip/content/datasets/clip_encoded/all_encodings_with_umap_5_sec.pkl")

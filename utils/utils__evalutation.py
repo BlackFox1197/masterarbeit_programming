@@ -24,6 +24,8 @@ def evaluate(device, model, dataset, batch_size):
 
 
 
+
+
 def show_bars(predictions, label_list, color="r", title_string = ""):
 
     fig = plt.figure(constrained_layout=True , figsize=(10, 20))

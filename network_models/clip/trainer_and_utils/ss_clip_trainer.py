@@ -7,9 +7,10 @@ from torch.utils.data import DataLoader
 
 from network_models.clip.trainer_and_utils.ss___util_class_batches_sampler import ClassBatchesSampler
 from network_models.soundsream_models_and_utils.ss_encoded_dataset import ss_encoded_dataset_full
+import json
 
 
-class SSDirectDMTrainer():
+class SSClipTrainer():
     def __init__(
             self,
             model: nn.Module,
@@ -36,6 +37,7 @@ class SSDirectDMTrainer():
         self.loss_fn = loss_fn
 
     def train(self):
+        epochloss = []
         labels = self.dataset.encoded_dataset.encodedData[self.dataset.encoded_dataset.labelcolumn].to_numpy()
         dataloader = DataLoader(self.dataset,  num_workers=2, batch_sampler=ClassBatchesSampler(labels, num_class_samples=2))
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr, betas=(0.9, 0.999), eps=1e-08, weight_decay=1e-7)
@@ -47,11 +49,16 @@ class SSDirectDMTrainer():
             if (t % self.save_model_every == 0):
                 torch.save(self.model.state_dict(), self.model_path + f"encoder_{t}.pth")
             print(f"Epoch {t + 1}\n-------------------------------")
-            self.train_loop(dataloader, self.model, self.loss_fn, optimizer)
+            loss = self.train_loop(dataloader, self.model, self.loss_fn, optimizer)
+            epochloss = epochloss + [loss]
             gc.collect()
+            with open(f'{self.model_path}_loss.json', 'w', encoding='utf-8') as f:
+                json.dump(epochloss, f, ensure_ascii=False, indent=4)
+
 
     def train_loop(self, dataloader, model, loss_fn, optimizer):
         fulllos = 0
+        batches = 0
         size = len(dataloader.dataset)
         for batch, (X, z) in enumerate(dataloader):
             z = z.to(self.device)
@@ -96,7 +103,7 @@ class SSDirectDMTrainer():
                 loss, current = loss.item(), batch * len(X)
                 print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
                 # print(dp)
-
+            batches += 1
             # if ((size //( 2*7))-2 == batch):
             #     print(b1_to_b2_sim)
             #     print(b2_to_b1_sim)
@@ -105,3 +112,4 @@ class SSDirectDMTrainer():
                 # print(target_sm)
 
         print(fulllos)
+        return fulllos/batches

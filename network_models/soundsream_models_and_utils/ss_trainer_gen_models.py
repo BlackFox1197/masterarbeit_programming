@@ -1,4 +1,5 @@
 import gc
+import json
 import os
 from pathlib import Path
 
@@ -66,15 +67,23 @@ class SSGenModelTrainer():
         higest_true = []
         higest_pred = []
 
+
+        epoch_train_losses = []
+        epoch_eval_losses = []
+        epoch_eval_accs = []
+
+
         for t in range(self.num_epochs):
             if(t % self.save_model_every == 0):
                 torch.save(self.model.state_dict(), self.model_path + f"emo_reco_{t}.pth")
             print(f"Epoch {t + 1}\n-------------------------------")
             # this is the trainloop
-            self.train_loop(train_dataloader, self.model, self.loss_fn, optimizer, t)
+            epoch_train_losses = epoch_train_losses +  [self.train_loop(train_dataloader, self.model, self.loss_fn, optimizer, t)]
 
             # --------------------- testloop and evaluation- ---------------
-            acc, true, preds = self.test_loop(test_dataloader, self.model, self.loss_fn)
+            acc, true, preds, loss = self.test_loop(test_dataloader, self.model, self.loss_fn)
+            epoch_eval_losses = epoch_eval_losses + [loss]
+            epoch_eval_accs = epoch_eval_accs + [acc]
 
             if(acc > highest_acc):
                 old_acc = highest_acc
@@ -86,12 +95,19 @@ class SSGenModelTrainer():
                     self.save_best(self.model, acc, t, true, preds, old_acc, old_epoch)
                     highest_acc, higest_epoch = acc, t
             gc.collect()
+
+            information_dict = {"eval_losses" : epoch_eval_losses, "train_losses": epoch_train_losses, "eval_accs": epoch_eval_accs}
+            with open(f'{self.model_path}_statistics.json', 'w', encoding='utf-8') as f:
+                json.dump(information_dict, f, ensure_ascii=False, indent=4)
+
         return highest_acc, higest_epoch, higest_true, higest_pred
 
 
 
 
     def train_loop(self, dataloader, model, loss_fn, optimizer, epoch):
+        fullLoss = 0
+        batch = 0
         size = len(dataloader.dataset)
         for batch, (X, z) in enumerate(dataloader):
 
@@ -117,6 +133,10 @@ class SSGenModelTrainer():
             loss.backward()
             optimizer.step()
 
+
+            fullLoss += loss.item()
+            batch += 1
+
             if batch % 100 == 0:
                 loss, current = loss.item(), batch * len(X)
                 #print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
@@ -124,7 +144,9 @@ class SSGenModelTrainer():
                     print(f"[{current:>5d}/{size:>5d}] total-loss: {loss:>7f}; classification loss: {classification_loss:>8f};  cosine similarity loss: {cosine_loss:>8f}")
                 else:
                     print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+
             #gc.collect()
+        return fullLoss/batch
 
 
     def calculate_cosine_loss(self, pred_dims, loss_fn):
@@ -186,7 +208,7 @@ class SSGenModelTrainer():
         print(f"Test Error: \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
         if(self.regularize_dims):
             print(f"classification loss: {classification_loss_full:>8f};  cosine similarity loss: {cosine_loss_full:>8f} \n")
-        return correct, true, preds
+        return correct, true, preds, test_loss
 
 
 

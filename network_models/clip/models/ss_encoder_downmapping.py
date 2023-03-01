@@ -6,7 +6,7 @@ class EncoderDownmapping(nn.Module):
         super(EncoderDownmapping, self).__init__()
         self.enc = Encoder(vocab_size=0, embed_dim=embed_dim, n_heads=n_heads,
                            ff_dim=ff_dim, n_layers=n_layers, dropout=dropout, max_seq_len=max_seq_len)
-        self.linear = nn.Linear(embed_dim*175, output)
+        self.linear = nn.Linear(embed_dim*max_seq_len, output)
 
     def forward(self, x, mask=None):
         out = x
