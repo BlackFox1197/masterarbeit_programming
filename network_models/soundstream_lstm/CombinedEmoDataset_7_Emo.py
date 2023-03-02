@@ -1,6 +1,7 @@
 import os
 from typing import Tuple, List
 
+import librosa
 import numpy as np
 import pandas as pd
 import torch
@@ -163,7 +164,8 @@ class CombinedEmoDataSet_7_emos(Dataset):
     def     __init__(self, directory_tess: None | str = None, directory_ravdess: None | str = None,
                  directory_cafe: None | str = None, directory_mesd: None | str = None, directory_induced: None | str = None,
                  transFormAudio: callable = lambda x: x, device="cuda", filter_emotions: None | List[str] = None,
-                 with_dataset = False):
+                 with_dataset = False, librosa = False):
+        self.librosa = librosa
         self.withDataset = with_dataset
         self.device = device
 
@@ -184,9 +186,13 @@ class CombinedEmoDataSet_7_emos(Dataset):
         return self.dataFrame.__len__()
 
     def __getitem__(self, idx):
-        audio = torchaudio.load(self.dataFrame.iloc[idx][self.inputcolumn])[0].to(self.device)
+        if self.librosa:
+            audio = librosa.load(self.dataFrame.iloc[idx][self.inputcolumn])[0]
+            audio = self.transFormAudio(torch.tensor(audio)).numpy()
+        else:
+            audio = torchaudio.load(self.dataFrame.iloc[idx][self.inputcolumn])[0].to(self.device)
+            audio = torch.unsqueeze(self.transFormAudio(audio[0]), dim=0)
         #audio = torchaudio.load(self.dataFrame.iloc[idx][self.inputcolumn])[0]
-        audio = torch.unsqueeze(self.transFormAudio(audio[0]), dim=0)
         label = self.dataFrame.iloc[idx][self.labelcolumn]
         if self.withDataset:
             return audio, label, self.dataFrame.iloc[idx][self.datasetcolumn]

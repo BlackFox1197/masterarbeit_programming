@@ -1,5 +1,7 @@
 import gc
+from pathlib import Path
 
+import librosa
 import numpy as np
 import pandas as pd
 import torch
@@ -21,8 +23,8 @@ class ss_encoded_dataset_full(Dataset):
     def __init__(self, sound_stream_path: None | str = None,
                  directory_tess: None | str = None, directory_ravdess: None | str = None,
                  directory_cafe: None | str = None, directory_mesd: None | str = None, directory_induced: None | str = None,
-                 seconds = 3.5, sr=16000, device="cpu", one_hot_encoded = True, csvPath: str | None = None, clip_path: str | None = None, encoder =False, circular=False, umap = False):
-        assert not (sound_stream_path is None and csvPath is None)
+                 seconds = 3.5, sr=16000, device="cpu", one_hot_encoded = True, csvPath: str | None = None, clip_path: str | None = None, encoder =False, circular=False, umap = False, umap_dims = 4, just_mfcc = False):
+        assert not (sound_stream_path is None and csvPath is None and not just_mfcc)
         super().__init__()
         self.device = device
         self.sr = sr
@@ -43,11 +45,11 @@ class ss_encoded_dataset_full(Dataset):
 
         paths_dataset = CombinedEmoDataSet_7_emos(
             directory_tess=directory_tess, directory_cafe=directory_cafe, directory_ravdess=directory_ravdess, directory_induced = directory_induced,
-            directory_mesd=directory_mesd, device=device, transFormAudio=collateToSeconds(seconds, sr, const_value=0, circular_padding=circular, device=device))
+            directory_mesd=directory_mesd, device=device, transFormAudio=collateToSeconds(seconds, sr, const_value=0, circular_padding=circular, device=device), with_dataset=True, librosa=just_mfcc)
         num_labels = len(paths_dataset.label_list)
 
         self.encoded_dataset = ss_encoded_dataset(data_set=paths_dataset, sound_stream=soundstream, device=device,
-                                                  num_labels=num_labels, one_hot_encoded=one_hot_encoded, csvPath=csvPath, clip=clip, encoder=encoder, umap=umap)
+                                                  num_labels=num_labels, one_hot_encoded=one_hot_encoded, csvPath=csvPath, clip=clip, encoder=encoder, umap=umap, umap_dims= umap_dims, just_mfcc=just_mfcc)
 
 
     def __getitem__(self, index):
@@ -108,12 +110,13 @@ class ss_encoded_dataset(Dataset):
     # save_dataset_column = "ds_col"
 
     def __init__(self, data_set: CombinedEmoDataSet_7_emos | DatasetGeneric,  clip: EncoderDownmapping | SS_Direct_Downmapping_Model | None,  sound_stream: SoundStream | None, num_labels = 7,
-                 one_hot_encoded = True, device = "cpu", csvPath: str | None = None, encoder = False, umap = False):
+                 one_hot_encoded = True, device = "cpu", csvPath: str | None = None, encoder = False, umap = False, umap_dims = 4, just_mfcc = False):
 
+        self.umap_dims = umap_dims
         self.umap = umap
         self.encoder = encoder
         self.clip = clip
-        assert not (sound_stream is None and csvPath is None)
+        assert not (sound_stream is None and csvPath is None and not just_mfcc)
         super().__init__()
         self.device = device
         self.one_hot_encoded = one_hot_encoded
@@ -121,13 +124,17 @@ class ss_encoded_dataset(Dataset):
         self.num_labels = num_labels
         self.dataSet = data_set
 
-        if(csvPath is None):
+        if just_mfcc:
             self.label_list = self.dataSet.label_list
-            self.encodedData: pd.DataFrame = self._encodeWithSoundStream()
+            self.encodedData: pd.DataFrame = self.generateMfccs()
         else:
-            self.encodedData = self.loadEncoding(csvPath)
-            label_list = self.encodedData.groupby(self.clear_label_colums)[self.clear_label_colums].count().index.array.to_numpy()
-            self.label_list = np.sort(label_list)
+            if(csvPath is None):
+                self.label_list = self.dataSet.label_list
+                self.encodedData: pd.DataFrame = self._encodeWithSoundStream()
+            else:
+                self.encodedData = self.loadEncoding(csvPath)
+                label_list = self.encodedData.groupby(self.clear_label_colums)[self.clear_label_colums].count().index.array.to_numpy()
+                self.label_list = np.sort(label_list)
 
         self.target_transform = self.indices_to_one_hot
 
@@ -147,7 +154,7 @@ class ss_encoded_dataset(Dataset):
 
 
     def saveEncoding(self, path):
-
+        #Path(path).mkdir(parents=True, exist_ok=True)
         #saveDf[self.save_dataset_column] = self.dataSet
 
         self.encodedData.to_pickle(path)
@@ -165,6 +172,31 @@ class ss_encoded_dataset(Dataset):
 
     def getEmotionFromId(self, id: int):
         return self.dataSet.label_list[id]
+
+
+    def generateMfccs(self):
+        from utils.Visual_Coding_utils import progress
+        tensors = []
+        emotions = []
+        emotions_names = []
+        dataset_names = []
+        i = 0
+        for sample in iter(self.dataSet):
+            i += 1
+            progress(i, self.dataSet.__len__(), "generating encoding")
+            mfcc = librosa.feature.mfcc(y=sample[0], sr=16000, n_mfcc=40).T
+            dataset_names.append(sample[2])
+            tensors.append(mfcc)
+            emotions.append(self.emoToId(sample[1]))
+            emotions_names.append(sample[1])
+
+        df = pd.DataFrame()
+        df[self.inputcolumn] = tensors
+        df[self.dataset_column] = dataset_names
+        df[self.labelcolumn] = emotions
+        df[self.clear_label_colums] = emotions_names
+        return df
+
 
     def _encodeWithSoundStream(self):
         tensors = []
@@ -223,7 +255,7 @@ class ss_encoded_dataset(Dataset):
 
 
         if self.umap:
-            pca = umap.UMAP(n_components=4, n_neighbors=len(df)-1)
+            pca = umap.UMAP(n_components=self.umap_dims, n_neighbors=len(df)-2)
             lst = [tens.numpy() for tens in df[self.inputcolumn]]
             out = pca.fit(np.asarray(lst))
             pcaOut = np.asarray([i for i in out.embedding_])

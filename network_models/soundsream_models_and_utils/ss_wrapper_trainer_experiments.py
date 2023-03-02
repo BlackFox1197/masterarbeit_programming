@@ -57,7 +57,7 @@ class ExperimentsTrainer:
         return self.run_model_test(lr, epochs, model, save_dir)
 
     def run_dim_red_model_test(self, lr, epochs, current_run):
-        bs = self.batch_size * 2
+        bs = self.batch_size
         torch.manual_seed(self.seed)
         model = SSDimRedModel(num_emotions=len(self.label_list)).to(self.device)
         save_dir = self.models_dir + f"/Run_Nr_{current_run}/dimred/"
@@ -73,7 +73,8 @@ class ExperimentsTrainer:
 
 
     def run_model_test(self, lr, epochs, model, save_dir, bs = None):
-        trainDS, testDs = train_val_dataset(self.dataset, val_split=0.1, seed=100)
+        trainDS, testDs = train_val_dataset(self.dataset, val_split=0.2, seed=100)
+        valDs, testDs = train_val_dataset(testDs, val_split=0.5, seed=100)
         trainer = SSGenModelTrainer(lr=lr, num_epochs=epochs, model=model, train_dataset=trainDS,
                                     eval_dataset=testDs,
                                     device=self.device, labelList=self.label_list,
