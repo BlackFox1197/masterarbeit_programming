@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
@@ -47,8 +49,10 @@ class ModelTrainer():
     def train(self):
         train_dataloader = DataLoader(self.train_dataset, shuffle=True, batch_size=self.batch_size, num_workers=2 ,collate_fn=self.colate_fn)
         test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=2,collate_fn=self.colate_fn)
-        #optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
-        optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
+        # optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
+        #optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr, betas=(0.9, 0.99), eps=1e-08)
+        Path(self.model_path).mkdir(parents=True, exist_ok=True)
 
         for t in range(self.num_epochs):
             if(t % self.save_model_every == 0):

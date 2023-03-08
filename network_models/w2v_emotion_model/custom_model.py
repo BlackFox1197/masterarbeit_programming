@@ -72,14 +72,17 @@ class W2V_EmotionClassifierSevenEmos(nn.Module):
 
 
 class Wav2Vec2ForSpeechClassification(Wav2Vec2PreTrainedModel):
-    def __init__(self, model_name_or_path, pooling_mode, device, num_emotions = 7):
+    def __init__(self, model_name_or_path, pooling_mode, device, dataset_generator = False, from_full_dataset = False, num_emotions = 7):
+        assert not (dataset_generator and from_full_dataset)
+        self.from_full_dataset = from_full_dataset
+        self.dataset_generator = dataset_generator
         config = Wav2Vec2Config(name_or_path=model_name_or_path)
         super().__init__(config)
         self.deviceE = device
         self.pooling_mode = pooling_mode
 
-
-        self.wav2vec2 = Wav2Vec2Model(config).to(device)
+        if from_full_dataset:
+            self.wav2vec2 = Wav2Vec2Model(config).to(device)
         self.classifier = (W2V_EmotionClassifierSevenEmos(num_emotions=num_emotions)).to(device)
 
         #self.init_weights()
@@ -92,12 +95,21 @@ class Wav2Vec2ForSpeechClassification(Wav2Vec2PreTrainedModel):
             input_values,
             return_with_dims=False, soft_max=False
     ):
-        outputs = self.wav2vec2(
-            input_values,
-        )
 
-        hidden_states = torch.mean(outputs[0], dim=1)
+        if self.from_full_dataset:
+            hidden_states = input_values
+
+        else:
+            outputs = self.wav2vec2(
+                input_values,
+            )
+            hidden_states = torch.mean(outputs[0], dim=1)
+
+        if self.dataset_generator:
+            return hidden_states
+
         logits = self.classifier(hidden_states, return_with_dims= return_with_dims, soft_max = soft_max)
+
         return logits
 
 
