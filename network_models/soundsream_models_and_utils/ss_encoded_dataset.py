@@ -59,13 +59,13 @@ class ss_encoded_dataset_full(Dataset):
         self.encoded_dataset.saveEncoding(path)
 
 
-    def getNextNeighbour(self, vector, emotion=None, included_datasets  = None):
+    def getNextNeighbour(self, vector, emotion=None, included_datasets  = None, on_column = "encoded"):
         if included_datasets is None:
             included_datasets = [CombinedEmoDataSet_7_emos.cafeString, CombinedEmoDataSet_7_emos.tessString, CombinedEmoDataSet_7_emos.mesdString, CombinedEmoDataSet_7_emos.ravedessString]
         filterDatasets = self.encoded_dataset.encodedData.loc[self.encoded_dataset.encodedData[self.encoded_dataset.dataset_column].isin(included_datasets)]
         if emotion is not None:
             filterDatasets = filterDatasets.loc[filterDatasets[self.encoded_dataset.clear_label_colums].isin([emotion])]
-        npds = np.asarray([fp.numpy() for fp in filterDatasets["pca"]])
+        npds = np.asarray([fp.numpy() for fp in filterDatasets[on_column]])
         kdt = KDTree(npds, metric='euclidean')
         cv = kdt.query(np.atleast_2d(vector), k=1, return_distance=False)[0, 0]
         return filterDatasets.iloc[cv]
@@ -156,7 +156,6 @@ class ss_encoded_dataset(Dataset):
     def saveEncoding(self, path):
         #Path(path).mkdir(parents=True, exist_ok=True)
         #saveDf[self.save_dataset_column] = self.dataSet
-
         self.encodedData.to_pickle(path)
 
     def loadEncoding(self, path):

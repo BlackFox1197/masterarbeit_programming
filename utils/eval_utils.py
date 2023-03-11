@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import sklearn.metrics
+import seaborn as sns
+from matplotlib import pyplot as plt
 from numba import float64
 
 
@@ -44,6 +46,14 @@ def classificationReport(true_codes, pred_codes, sortedLabelStrings, printReport
 
     return tp, tn, fp, fn
 
+
+def confustion_matrix_heatmap(true_codes, pred_codes, sortedLabelStrings, printReport = True):
+    length = len(sortedLabelStrings)
+    matrix = sklearn.metrics.confusion_matrix(true_codes, pred_codes) / 100
+    df = pd.DataFrame(matrix, index=sortedLabelStrings, columns=sortedLabelStrings)
+    plt.figure(figsize=(10, 7))
+    sns.heatmap(df, annot=True, cmap="viridis")
+    plt.show()
 
 
 def confusion_matrix(true_codes, pred_codes, sortedLabelStrings, printReport = True):

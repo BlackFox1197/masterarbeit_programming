@@ -34,14 +34,14 @@ class W2V_EmotionClassifierSevenEmos(nn.Module):
 
         self.initialize_weights()
 
-    def forward(self, x, return_with_dims = False, soft_max = False):
+    def forward(self, x, return_with_dims = False, soft_max = False, eval_mode = False):
         relu = F.relu
         tanh = torch.tanh
         softmax = F.softmax
 
         x = self.linear1(x)
         x = relu(x)
-        x = self.dropouts(x)
+        x = self.dropouts(x) if eval_mode else x
         x = self.linear2(x)
         x = relu(x)
         x = self.linear3(x)
@@ -81,7 +81,7 @@ class Wav2Vec2ForSpeechClassification(Wav2Vec2PreTrainedModel):
         self.deviceE = device
         self.pooling_mode = pooling_mode
 
-        if from_full_dataset:
+        if not from_full_dataset:
             self.wav2vec2 = Wav2Vec2Model(config).to(device)
         self.classifier = (W2V_EmotionClassifierSevenEmos(num_emotions=num_emotions)).to(device)
 
@@ -93,7 +93,7 @@ class Wav2Vec2ForSpeechClassification(Wav2Vec2PreTrainedModel):
     def forward(
             self,
             input_values,
-            return_with_dims=False, soft_max=False
+            return_with_dims=False, soft_max=False, eval_mode = False
     ):
 
         if self.from_full_dataset:
@@ -108,7 +108,7 @@ class Wav2Vec2ForSpeechClassification(Wav2Vec2PreTrainedModel):
         if self.dataset_generator:
             return hidden_states
 
-        logits = self.classifier(hidden_states, return_with_dims= return_with_dims, soft_max = soft_max)
+        logits = self.classifier(hidden_states, return_with_dims= return_with_dims, soft_max = soft_max, eval_mode=eval_mode)
 
         return logits
 

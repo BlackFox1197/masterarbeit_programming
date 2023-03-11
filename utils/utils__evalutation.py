@@ -26,7 +26,7 @@ def evaluate(device, model, dataset, batch_size):
 
 
 
-def show_bars(predictions, label_list, color="r", title_string = ""):
+def show_bars(predictions, label_list, color="r", title_string = "", dims = 4):
 
     fig = plt.figure(constrained_layout=True , figsize=(10, 20))
     fig.suptitle(title_string, fontsize=21)
@@ -35,18 +35,24 @@ def show_bars(predictions, label_list, color="r", title_string = ""):
     subfigs = fig.subfigures(nrows=7, ncols=1)
     for label in range(len(label_list)):
 
-        axs = subfigs[label].subplots(nrows=1, ncols=4)
+        axs = subfigs[label].subplots(nrows=1, ncols=dims)
 
         subfigs[label].suptitle(f'{label_list[label]}', fontsize=19)
-        sns.histplot([item[0] for item in predictions[label_list[label]]], bins=25, color=color, ax=axs[0], kde=True, kde_kws={"cut": 3}, stat="density")
-        axs[0].yaxis.label.set_visible(False)
-        axs[0].set_title(f'Parameter 0')
-        sns.histplot([item[1] for item in predictions[label_list[label]]], bins=25, color=color, ax=axs[1], kde=True, kde_kws={"cut": 3}, stat="density")
-        axs[1].yaxis.label.set_visible(False)
-        axs[1].set_title(f'Parameter 1')
-        sns.histplot([item[2] for item in predictions[label_list[label]]], bins=25, color=color, ax=axs[2], kde=True, kde_kws={"cut": 3}, stat="density")
-        axs[2].yaxis.label.set_visible(False)
-        axs[2].set_title(f'Parameter 2')
-        sns.histplot([item[3] for item in predictions[label_list[label]]], bins=25, color=color, ax=axs[3], kde=True, kde_kws={"cut": 3}, stat="density")
-        axs[3].yaxis.label.set_visible(False)
-        axs[3].set_title(f'Parameter 3')
+        for i in range(dims):
+            sns.histplot([item[i] for item in predictions[label_list[label]]], bins=25, color=color, ax=axs[i],
+            kde=True, kde_kws={"cut": 3}, stat="density")
+            axs[i].yaxis.label.set_visible(False)
+            axs[i].set_title(f'Parameter 0')
+
+        #sns.histplot([item[0] for item in predictions[label_list[label]]], bins=25, color=color, ax=axs[0], kde=True, kde_kws={"cut": 3}, stat="density")
+        #axs[0].yaxis.label.set_visible(False)
+        #axs[0].set_title(f'Parameter 0')
+        #sns.histplot([item[1] for item in predictions[label_list[label]]], bins=25, color=color, ax=axs[1], kde=True, kde_kws={"cut": 3}, stat="density")
+        #axs[1].yaxis.label.set_visible(False)
+        #axs[1].set_title(f'Parameter 1')
+        #sns.histplot([item[2] for item in predictions[label_list[label]]], bins=25, color=color, ax=axs[2], kde=True, kde_kws={"cut": 3}, stat="density")
+        #axs[2].yaxis.label.set_visible(False)
+        #axs[2].set_title(f'Parameter 2')
+        #sns.histplot([item[3] for item in predictions[label_list[label]]], bins=25, color=color, ax=axs[3], kde=True, kde_kws={"cut": 3}, stat="density")
+        #axs[3].yaxis.label.set_visible(False)
+        #axs[3].set_title(f'Parameter 3')

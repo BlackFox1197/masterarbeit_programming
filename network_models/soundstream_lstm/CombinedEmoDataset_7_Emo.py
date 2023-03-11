@@ -164,7 +164,8 @@ class CombinedEmoDataSet_7_emos(Dataset):
     def     __init__(self, directory_tess: None | str = None, directory_ravdess: None | str = None,
                  directory_cafe: None | str = None, directory_mesd: None | str = None, directory_induced: None | str = None,
                  transFormAudio: callable = lambda x: x, device="cuda", filter_emotions: None | List[str] = None,
-                 with_dataset = False, librosa = False):
+                 with_dataset = False, librosa = False, one_hot = False):
+        self.one_hot = one_hot
         self.librosa = librosa
         self.withDataset = with_dataset
         self.device = device
@@ -196,7 +197,20 @@ class CombinedEmoDataSet_7_emos(Dataset):
         label = self.dataFrame.iloc[idx][self.labelcolumn]
         if self.withDataset:
             return audio, label, self.dataFrame.iloc[idx][self.datasetcolumn]
+
+        if self.one_hot:
+            return audio, self.indices_to_one_hot(self.emoToId(label))[0]
         return audio, label
+
+
+
+
+    def indices_to_one_hot(self, data):
+        """Convert an iterable of indices to one-hot encoded labels."""
+        targets = np.array(data).reshape(-1)
+        return np.eye(len(self.label_list))[targets]
+    def emoToId(self, emotion: str):
+        return np.where(self.label_list == emotion)[0]
 
 
     def load_custom_dataset(self) -> pd.DataFrame:
