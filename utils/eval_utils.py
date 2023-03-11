@@ -49,7 +49,9 @@ def classificationReport(true_codes, pred_codes, sortedLabelStrings, printReport
 
 def confustion_matrix_heatmap(true_codes, pred_codes, sortedLabelStrings, printReport = True):
     length = len(sortedLabelStrings)
-    matrix = sklearn.metrics.confusion_matrix(true_codes, pred_codes) / 100
+    #matrix = sklearn.metrics.confusion_matrix(true_codes, pred_codes) / 100
+    matrix = sklearn.metrics.confusion_matrix(true_codes, pred_codes)
+    matrix = matrix / np.sum(matrix, axis=1)
     df = pd.DataFrame(matrix, index=sortedLabelStrings, columns=sortedLabelStrings)
     plt.figure(figsize=(10, 7))
     sns.heatmap(df, annot=True, cmap="viridis")
