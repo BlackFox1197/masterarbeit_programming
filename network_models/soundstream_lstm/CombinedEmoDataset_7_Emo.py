@@ -88,6 +88,27 @@ def loadInduced(directory_induced) -> Tuple:
     paths, emotions = crawl(lamb, directory_induced)
     return paths, emotions
 
+
+def loadIntensit(directory_induced) -> Tuple:
+    induced_dict = {
+        'ang': "angry",
+        'dis': "disgust",
+        'hap': "happy",
+        #'neutral': "neutral",
+        'fea': "fear",
+        'ple': "surprise",
+        'sur': "surprise",
+        'sad': "sad"
+    }
+
+    def lamb(filename):
+        label = filename.split('_')[1]
+        label = induced_dict[label]
+        return label
+
+    paths, emotions = crawl(lamb, directory_induced)
+    return paths, emotions
+
 # https://zenodo.org/record/1188976
 def loadRavdess(directory_ravdess) -> Tuple:
     ravedessDict = {
@@ -160,9 +181,11 @@ class CombinedEmoDataSet_7_emos(Dataset):
     cafeString = "cafe"
     ravedessString = "ravedess"
     inducedString = "induced"
+    intensitString = "intensit"
 
     def     __init__(self, directory_tess: None | str = None, directory_ravdess: None | str = None,
                  directory_cafe: None | str = None, directory_mesd: None | str = None, directory_induced: None | str = None,
+                directory_stimuli: None | str = None,
                  transFormAudio: callable = lambda x: x, device="cuda", filter_emotions: None | List[str] = None,
                  with_dataset = False, librosa = False, one_hot = False):
         self.one_hot = one_hot
@@ -175,6 +198,7 @@ class CombinedEmoDataSet_7_emos(Dataset):
         self.directory_mesd = directory_mesd
         self.directory_ravdess = directory_ravdess
         self.directory_cafe = directory_cafe
+        self.directory_stimuli = directory_stimuli
 
         self.filter_emotions = filter_emotions
         self.transFormAudio = transFormAudio
@@ -219,12 +243,13 @@ class CombinedEmoDataSet_7_emos(Dataset):
         mesd_paths, mesd_emo = self.loadMesd() if self.directory_mesd is not None else ([], [])
         ravdess_paths, ravdess_emo = self.loadRavdess() if self.directory_ravdess is not None else ([], [])
         cafe_paths, cafe_emo = self.loadCafe() if self.directory_cafe is not None else ([], [])
+        stimuli_paths, stimuli_emo = self.loadIntens() if self.directory_stimuli is not None else ([], [])
 
-        paths = mesd_paths + tess_paths + cafe_paths + ravdess_paths + incuced_paths
-        emotions = mesd_emo + tess_emo + cafe_emo + ravdess_emo + incuced_emo
+        paths = mesd_paths + tess_paths + cafe_paths + ravdess_paths + incuced_paths + stimuli_paths
+        emotions = mesd_emo + tess_emo + cafe_emo + ravdess_emo + incuced_emo + stimuli_emo
         dataset = [self.mesdString] * len(mesd_emo) + [self.tessString] * len(tess_emo) + \
                   [self.cafeString] * len(cafe_emo) + [self.ravedessString] * len(ravdess_emo) + \
-                  [self.inducedString] * len(incuced_emo)
+                  [self.inducedString] * len(incuced_emo) + [self.intensitString] * len(stimuli_emo)
 
         df = pd.DataFrame()
         df[self.inputcolumn] = paths
@@ -241,6 +266,9 @@ class CombinedEmoDataSet_7_emos(Dataset):
 
     def loadInduced(self) -> Tuple:
         return loadInduced(self.directory_induced)
+
+    def loadIntens(self) -> Tuple:
+        return loadIntensit(self.directory_stimuli)
 
     def loadCafe(self) -> Tuple:
         return loadCafe(self.directory_cafe)
