@@ -26,7 +26,7 @@ def evaluate(device, model, dataset, batch_size):
 
 
 
-def show_bars(predictions, label_list, color="r", title_string = "", dims = 4):
+def show_bars(predictions, label_list, color="r", title_string = "", dims = 4, normalize = False):
 
     fig = plt.figure(constrained_layout=True , figsize=(10, 20))
     fig.suptitle(title_string, fontsize=21)
@@ -41,6 +41,8 @@ def show_bars(predictions, label_list, color="r", title_string = "", dims = 4):
         for i in range(dims):
             sns.histplot([item[i] for item in predictions[label_list[label]]], bins=25, color=color, ax=axs[i],
             kde=True, kde_kws={"cut": 3}, stat="density")
+            if normalize:
+                axs[i].set_xlim([-1.3, 1.3])
             axs[i].yaxis.label.set_visible(False)
             axs[i].set_title(f'Parameter 0')
 
