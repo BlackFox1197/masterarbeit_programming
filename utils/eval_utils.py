@@ -47,11 +47,12 @@ def classificationReport(true_codes, pred_codes, sortedLabelStrings, printReport
     return tp, tn, fp, fn
 
 
-def confustion_matrix_heatmap(true_codes, pred_codes, sortedLabelStrings, title, show_legend = True):
+def confustion_matrix_heatmap(true_codes, pred_codes, sortedLabelStrings, title, show_legend = True, normalize = True):
     length = len(sortedLabelStrings)
     #matrix = sklearn.metrics.confusion_matrix(true_codes, pred_codes) / 100
     matrix = sklearn.metrics.confusion_matrix(true_codes, pred_codes)
-    matrix = matrix / np.sum(matrix, axis=1)
+    if normalize:
+        matrix = matrix / np.sum(matrix, axis=1)[:, None]
     df = pd.DataFrame(matrix, index=sortedLabelStrings, columns=sortedLabelStrings)
     fig = plt.figure(figsize=(10, 7))
     fig.suptitle(title, fontsize=21)
