@@ -39,12 +39,13 @@ def show_bars(predictions, label_list, color="r", title_string = "", dims = 4, n
 
         subfigs[label].suptitle(f'{label_list[label]}', fontsize=19)
         for i in range(dims):
-            sns.histplot([item[i] for item in predictions[label_list[label]]], bins=25, color=color, ax=axs[i],
+            sns.histplot([item[i] for item in predictions[label_list[label]]], bins=70, color=color, ax=axs[i],
             kde=True, kde_kws={"cut": 3}, stat="density")
             if normalize:
                 axs[i].set_xlim([-1.3, 1.3])
-            axs[i].yaxis.label.set_visible(False)
-            axs[i].set_title(f'Parameter 0')
+            #axs[i].yaxis.label.set_visible(False)
+            axs[i].set_yticks([])
+            axs[i].set_title(f'Parameter {i}')
 
         #sns.histplot([item[0] for item in predictions[label_list[label]]], bins=25, color=color, ax=axs[0], kde=True, kde_kws={"cut": 3}, stat="density")
         #axs[0].yaxis.label.set_visible(False)
